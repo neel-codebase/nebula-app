@@ -13,10 +13,11 @@ import {
   VolumeX,
   UserCheck,
   LogIn,
-  LogOut
+  LogOut,
+  HelpCircle
 } from 'lucide-react';
 
-export const HeaderNav = () => {
+export const HeaderNav = ({ onOpenLanding }) => {
   const {
     nodes,
     links,
@@ -33,9 +34,6 @@ export const HeaderNav = () => {
     isAudioActive,
     toggleAmbientAudio
   } = useSpace();
-
-  const totalNodes = Object.keys(nodes).length;
-  const totalLinks = links.length;
 
   return (
     <header className="absolute top-4 left-4 right-4 z-30 pointer-events-none flex items-center justify-between gap-4">
@@ -57,7 +55,7 @@ export const HeaderNav = () => {
             <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
               Nebula
               <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-                v2.1
+                v2.2
               </span>
             </h1>
             <p className="text-[11px] text-slate-400 font-medium">Spatial Thought Engine</p>
@@ -91,6 +89,16 @@ export const HeaderNav = () => {
 
       {/* Right User & Sound & Sync Controls */}
       <div className="pointer-events-auto flex items-center gap-2.5 glass-panel px-3.5 py-2 rounded-2xl">
+        {/* Landing Page Showcase Re-open Button */}
+        <button
+          onClick={onOpenLanding}
+          className="p-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 transition-colors flex items-center gap-1 text-xs"
+          title="Intro Landing Page Showcase"
+        >
+          <HelpCircle className="w-4 h-4 text-purple-400" />
+          <span className="hidden lg:inline text-[11px] font-medium">Landing</span>
+        </button>
+
         {/* Ambient Deep Focus Audio Toggle */}
         <button
           onClick={toggleAmbientAudio}

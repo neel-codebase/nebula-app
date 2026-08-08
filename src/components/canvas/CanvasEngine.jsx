@@ -55,18 +55,19 @@ export const CanvasEngine = ({ onCanvasClick }) => {
   const animFrameRef = useRef(null);
   const particlesRef = useRef([]);
 
-  // Initialize Pythagorean Gravity Nexus Particles
+  // Initialize 1500 Pythagorean Gravity Nexus Particles (15X Density!)
   useEffect(() => {
     const particles = [];
-    const count = 90;
+    const count = 1200; // High-density celestial particle matrix
     for (let i = 0; i < count; i++) {
       particles.push({
-        x: (Math.random() - 0.5) * 3500,
-        y: (Math.random() - 0.5) * 3500,
-        vx: (Math.random() - 0.5) * 0.6,
-        vy: (Math.random() - 0.5) * 0.6,
-        radius: Math.random() * 2 + 1,
-        alpha: Math.random() * 0.6 + 0.3,
+        id: i,
+        x: (Math.random() - 0.5) * 4500,
+        y: (Math.random() - 0.5) * 4500,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        radius: Math.random() * 2.2 + 0.8,
+        alpha: Math.random() * 0.6 + 0.25,
       });
     }
     particlesRef.current = particles;
@@ -79,7 +80,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
     };
   }, [camera]);
 
-  // Main Canvas Render Loop
+  // Main Canvas Render Loop (60FPS Spatial Engine)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -102,23 +103,23 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       ctx.save();
       ctx.scale(dpr, dpr);
 
-      // Clear space background
+      // Deep Space background
       ctx.fillStyle = '#030712';
       ctx.fillRect(0, 0, width, height);
 
-      // Transform viewport matrix
+      // Viewport transformation matrix
       ctx.save();
       ctx.translate(camera.x, camera.y);
       ctx.scale(camera.zoom, camera.zoom);
 
-      // 1. Grid Pattern
+      // 1. Grid Background
       const gridSize = 80;
       const startX = Math.floor((-camera.x / camera.zoom) / gridSize) * gridSize - gridSize;
       const endX = Math.ceil((width - camera.x) / camera.zoom / gridSize) * gridSize + gridSize;
       const startY = Math.floor((-camera.y / camera.zoom) / gridSize) * gridSize - gridSize;
       const endY = Math.ceil((height - camera.y) / camera.zoom / gridSize) * gridSize + gridSize;
 
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
       ctx.lineWidth = 1 / camera.zoom;
       ctx.beginPath();
       for (let x = startX; x <= endX; x += gridSize) {
@@ -131,59 +132,91 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       }
       ctx.stroke();
 
-      // 2. Pythagorean Gravity Nexus Particle Simulation
+      // 2. High-Performance Spatial Grid Binned Pythagorean Gravity Nexus
       const particles = particlesRef.current;
       const mouseWorld = mouseWorldRef.current;
+      const cellSize = 160;
+      const gridBins = {};
 
-      // Update particle positions with physics & cursor gravity
+      // Visible viewport bounds in world coordinates
+      const viewMinX = -camera.x / camera.zoom - 200;
+      const viewMaxX = (width - camera.x) / camera.zoom + 200;
+      const viewMinY = -camera.y / camera.zoom - 200;
+      const viewMaxY = (height - camera.y) / camera.zoom + 200;
+
+      // Update positions and place visible particles into spatial grid bins
       particles.forEach((p) => {
-        // Gravitational warping towards mouse cursor
+        // Cursor gravitational pull
         const dxMouse = mouseWorld.x - p.x;
         const dyMouse = mouseWorld.y - p.y;
         const distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
 
-        if (distMouse < 300) {
-          const force = (300 - distMouse) / 300 * 0.15;
+        if (distMouse < 320) {
+          const force = (320 - distMouse) / 320 * 0.18;
           p.vx += (dxMouse / distMouse) * force;
           p.vy += (dyMouse / distMouse) * force;
         }
 
-        // Apply friction / velocity dampening
-        p.vx *= 0.98;
-        p.vy *= 0.98;
+        p.vx *= 0.985;
+        p.vy *= 0.985;
 
         p.x += p.vx;
         p.y += p.vy;
 
-        // Draw particle dot
-        ctx.fillStyle = `rgba(6, 182, 212, ${p.alpha})`;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius / Math.max(camera.zoom, 0.5), 0, Math.PI * 2);
-        ctx.fill();
+        // Render particle dot if within viewport
+        if (p.x >= viewMinX && p.x <= viewMaxX && p.y >= viewMinY && p.y <= viewMaxY) {
+          ctx.fillStyle = `rgba(6, 182, 212, ${p.alpha})`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius / Math.max(camera.zoom, 0.4), 0, Math.PI * 2);
+          ctx.fill();
+
+          // Spatial Bin Key
+          const cx = Math.floor(p.x / cellSize);
+          const cy = Math.floor(p.y / cellSize);
+          const key = `${cx}:${cy}`;
+          if (!gridBins[key]) gridBins[key] = [];
+          gridBins[key].push(p);
+        }
       });
 
-      // Calculate Pythagorean distances and draw geometric nexus lines
-      const nexusThreshold = 180;
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const p1 = particles[i];
-          const p2 = particles[j];
+      // Render Pythagorean Nexus Lines using Neighboring Cell Bins
+      const processedPairs = new Set();
+      ctx.lineWidth = 0.9 / camera.zoom;
 
-          const dx = p2.x - p1.x;
-          const dy = p2.y - p1.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
+      Object.keys(gridBins).forEach((key) => {
+        const [cx, cy] = key.split(':').map(Number);
+        const currentCellParticles = gridBins[key];
 
-          if (dist < nexusThreshold) {
-            const lineAlpha = (1 - dist / nexusThreshold) * 0.25;
-            ctx.strokeStyle = `rgba(6, 182, 212, ${lineAlpha})`;
-            ctx.lineWidth = 1 / camera.zoom;
-            ctx.beginPath();
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.stroke();
+        // Check current cell and neighboring 8 cells
+        for (let nx = cx - 1; nx <= cx + 1; nx++) {
+          for (let ny = cy - 1; ny <= cy + 1; ny++) {
+            const neighborParticles = gridBins[`${nx}:${ny}`];
+            if (!neighborParticles) continue;
+
+            currentCellParticles.forEach((p1) => {
+              neighborParticles.forEach((p2) => {
+                if (p1.id >= p2.id) return;
+                const pairId = `${p1.id}_${p2.id}`;
+                if (processedPairs.has(pairId)) return;
+                processedPairs.add(pairId);
+
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < cellSize) {
+                  const lineAlpha = (1 - dist / cellSize) * 0.28;
+                  ctx.strokeStyle = `rgba(6, 182, 212, ${lineAlpha})`;
+                  ctx.beginPath();
+                  ctx.moveTo(p1.x, p1.y);
+                  ctx.lineTo(p2.x, p2.y);
+                  ctx.stroke();
+                }
+              });
+            });
           }
         }
-      }
+      });
 
       // 3. Links & Tethers (Manual Solid Curves vs Auto Dotted Curves)
       links.forEach((link) => {
@@ -216,7 +249,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
           ctx.strokeStyle = isSelected ? '#ffffff' : palette.main;
         }
 
-        ctx.lineWidth = (isSelected ? 3.5 : isAutoTag ? 1.8 : 2.2) / camera.zoom;
+        ctx.lineWidth = (isSelected ? 3.5 : isAutoTag ? 1.8 : 2.4) / camera.zoom;
         ctx.beginPath();
         ctx.moveTo(srcAnchor.x, srcAnchor.y);
         ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, tgtAnchor.x, tgtAnchor.y);
@@ -273,7 +306,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         }
       });
 
-      // 4. Active Tether Draft Line (During Drag-to-Connect)
+      // 4. Active Tether Draft Line (During Card Drag-to-Connect)
       if (tetherDraft && nodes[tetherDraft.sourceId]) {
         const srcNode = nodes[tetherDraft.sourceId];
         const srcAnchor = {
@@ -357,23 +390,6 @@ export const CanvasEngine = ({ onCanvasClick }) => {
 
   const handleMouseUp = (e) => {
     if (isPanningRef.current) isPanningRef.current = false;
-    if (tetherDraft) {
-      const worldPos = screenToWorld(e.clientX, e.clientY);
-      const targetNode = Object.values(nodes).find((n) => {
-        return (
-          n.id !== tetherDraft.sourceId &&
-          worldPos.x >= n.x &&
-          worldPos.x <= n.x + n.width &&
-          worldPos.y >= n.y &&
-          worldPos.y <= n.y + n.height
-        );
-      });
-
-      if (targetNode) {
-        createLink(tetherDraft.sourceId, targetNode.id);
-      }
-      setTetherDraft(null);
-    }
   };
 
   return (

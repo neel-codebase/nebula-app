@@ -28,6 +28,7 @@ export const ThoughtNodeOverlay = () => {
     updateNode,
     deleteNode,
     setTetherDraft,
+    createLink,
     setEditingNodeId
   } = useSpace();
 
@@ -70,15 +71,60 @@ export const ThoughtNodeOverlay = () => {
     }
   };
 
-  const startTetherDraft = (e, nodeId) => {
+  // Robust Card-to-Card Manual Tether Dragging
+  const startTetherDraft = (e, sourceNodeId) => {
     e.stopPropagation();
-    const node = nodes[nodeId];
-    if (!node) return;
+    e.preventDefault();
+
+    const sourceNode = nodes[sourceNodeId];
+    if (!sourceNode) return;
+
+    const initialWorldX = (e.clientX - camera.x) / camera.zoom;
+    const initialWorldY = (e.clientY - camera.y) / camera.zoom;
+
     setTetherDraft({
-      sourceId: nodeId,
-      x: node.x + node.width / 2,
-      y: node.y + node.height / 2
+      sourceId: sourceNodeId,
+      x: initialWorldX,
+      y: initialWorldY
     });
+
+    const handleWindowPointerMove = (moveEvt) => {
+      const worldX = (moveEvt.clientX - camera.x) / camera.zoom;
+      const worldY = (moveEvt.clientY - camera.y) / camera.zoom;
+      setTetherDraft({
+        sourceId: sourceNodeId,
+        x: worldX,
+        y: worldY
+      });
+    };
+
+    const handleWindowPointerUp = (upEvt) => {
+      window.removeEventListener('pointermove', handleWindowPointerMove);
+      window.removeEventListener('pointerup', handleWindowPointerUp);
+
+      const dropWorldX = (upEvt.clientX - camera.x) / camera.zoom;
+      const dropWorldY = (upEvt.clientY - camera.y) / camera.zoom;
+
+      // Find target node card under cursor (with generous padding for easy dropping)
+      const targetNode = Object.values(nodes).find((n) => {
+        return (
+          n.id !== sourceNodeId &&
+          dropWorldX >= n.x - 30 &&
+          dropWorldX <= n.x + n.width + 30 &&
+          dropWorldY >= n.y - 30 &&
+          dropWorldY <= n.y + n.height + 30
+        );
+      });
+
+      if (targetNode) {
+        createLink(sourceNodeId, targetNode.id);
+      }
+
+      setTetherDraft(null);
+    };
+
+    window.addEventListener('pointermove', handleWindowPointerMove);
+    window.addEventListener('pointerup', handleWindowPointerUp);
   };
 
   return (
@@ -119,11 +165,11 @@ export const ThoughtNodeOverlay = () => {
           >
             {/* Dedicated Tether Anchor UI Button (Right Edge Handle) */}
             <button
-              onMouseDown={(e) => startTetherDraft(e, node.id)}
-              className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-cyan-500 text-white border-2 border-slate-900 shadow-glow-cyan flex items-center justify-center opacity-70 hover:opacity-100 hover:scale-125 transition-all z-20"
+              onPointerDown={(e) => startTetherDraft(e, node.id)}
+              className="absolute -right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-2 border-slate-900 shadow-glow-cyan flex items-center justify-center opacity-80 hover:opacity-100 hover:scale-125 transition-all z-20 cursor-crosshair"
               title="Drag to tether to another card"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4" />
             </button>
 
             {/* Top Card Controls Header */}
@@ -150,8 +196,8 @@ export const ThoughtNodeOverlay = () => {
                 </button>
 
                 <button
-                  onClick={(e) => startTetherDraft(e, node.id)}
-                  className="p-1 rounded-md hover:bg-cyan-500/20 text-cyan-400 transition-colors"
+                  onPointerDown={(e) => startTetherDraft(e, node.id)}
+                  className="p-1 rounded-md hover:bg-cyan-500/20 text-cyan-400 transition-colors cursor-crosshair"
                   title="Drag connection tether"
                 >
                   <Link2 className="w-3.5 h-3.5" />
@@ -195,7 +241,7 @@ export const ThoughtNodeOverlay = () => {
                     className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-300 font-medium flex items-center gap-1"
                   >
                     <Tag className="w-2.5 h-2.5 opacity-60" />
-                    {tag}
+                    #{tag}
                   </span>
                 ))}
               </div>
