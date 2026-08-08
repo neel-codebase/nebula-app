@@ -8,6 +8,7 @@ import { CommandPalette } from './components/ui/CommandPalette';
 import { Sidebar } from './components/ui/Sidebar';
 import { NodeModal } from './components/ui/NodeModal';
 import { Minimap } from './components/ui/Minimap';
+import { FileDropZone } from './components/ui/FileDropZone';
 
 function AppContent() {
   return (
@@ -35,6 +36,9 @@ function AppContent() {
 
       {/* 8. Viewport Minimap */}
       <Minimap />
+
+      {/* 9. Drag & Drop File Import Zone */}
+      <FileDropZone />
     </div>
   );
 }

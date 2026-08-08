@@ -9,7 +9,11 @@ import {
   PanelLeft, 
   Search,
   Plus,
-  Compass
+  Volume2,
+  VolumeX,
+  UserCheck,
+  LogIn,
+  LogOut
 } from 'lucide-react';
 
 export const HeaderNav = () => {
@@ -22,7 +26,12 @@ export const HeaderNav = () => {
     pwaPrompt,
     triggerPwaInstall,
     isInstalled,
-    createNode
+    createNode,
+    currentUser,
+    signInWithGoogle,
+    signOutUser,
+    isAudioActive,
+    toggleAmbientAudio
   } = useSpace();
 
   const totalNodes = Object.keys(nodes).length;
@@ -48,7 +57,7 @@ export const HeaderNav = () => {
             <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
               Nebula
               <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-                PWA v2.0
+                v2.1
               </span>
             </h1>
             <p className="text-[11px] text-slate-400 font-medium">Spatial Thought Engine</p>
@@ -63,7 +72,7 @@ export const HeaderNav = () => {
           className="flex items-center gap-3 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:border-cyan-500/40 text-slate-300 text-xs transition-all"
         >
           <Search className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Search thoughts & tools...</span>
+          <span>Search thoughts & tags...</span>
           <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/40 text-slate-400 border border-white/10">
             ⌘K
           </kbd>
@@ -80,13 +89,23 @@ export const HeaderNav = () => {
         </button>
       </div>
 
-      {/* Right Stats & Sync Status */}
-      <div className="pointer-events-auto flex items-center gap-3 glass-panel px-4 py-2.5 rounded-2xl">
-        {/* Graph Stats Pill */}
-        <div className="hidden sm:flex items-center gap-3 text-xs text-slate-300 font-medium border-r border-white/10 pr-3">
-          <span><strong className="text-cyan-400">{totalNodes}</strong> Thoughts</span>
-          <span><strong className="text-purple-400">{totalLinks}</strong> Tethers</span>
-        </div>
+      {/* Right User & Sound & Sync Controls */}
+      <div className="pointer-events-auto flex items-center gap-2.5 glass-panel px-3.5 py-2 rounded-2xl">
+        {/* Ambient Deep Focus Audio Toggle */}
+        <button
+          onClick={toggleAmbientAudio}
+          className={`p-1.5 rounded-xl border transition-all flex items-center gap-1.5 text-xs ${
+            isAudioActive
+              ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-glow-purple'
+              : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10'
+          }`}
+          title={isAudioActive ? 'Mute Deep Focus Drone' : 'Enable 432Hz Ambient Focus Audio'}
+        >
+          {isAudioActive ? <Volume2 className="w-4 h-4 text-purple-400 animate-pulse" /> : <VolumeX className="w-4 h-4" />}
+          <span className="hidden lg:inline text-[11px] font-medium">
+            {isAudioActive ? 'Focus Audio On' : 'Ambient Off'}
+          </span>
+        </button>
 
         {/* Sync Status Badge */}
         <div className="flex items-center gap-1.5 text-xs font-medium">
@@ -110,14 +129,45 @@ export const HeaderNav = () => {
           )}
         </div>
 
-        {/* PWA Install Button */}
+        {/* User Auth Profile / Google Login */}
+        {currentUser ? (
+          <div className="flex items-center gap-2 border-l border-white/10 pl-2">
+            {currentUser.photoURL ? (
+              <img
+                src={currentUser.photoURL}
+                alt={currentUser.displayName || 'User'}
+                className="w-6 h-6 rounded-full border border-cyan-400/50"
+              />
+            ) : (
+              <UserCheck className="w-4 h-4 text-cyan-400" />
+            )}
+            <button
+              onClick={signOutUser}
+              className="p-1 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => signInWithGoogle().catch(console.error)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 text-xs font-medium transition-all"
+            title="Sign in with Google to sync across devices"
+          >
+            <LogIn className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">Google Sync</span>
+          </button>
+        )}
+
+        {/* PWA Install Prompt Button */}
         {pwaPrompt && !isInstalled && (
           <button
             onClick={triggerPwaInstall}
             className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-glow-purple transition-all"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Install App</span>
+            <span>Install</span>
           </button>
         )}
       </div>

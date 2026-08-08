@@ -1,23 +1,22 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { db } from '../lib/firebase';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { db, auth, signInWithGoogle, signOutUser, onAuthStateChanged } from '../lib/firebase';
 import { 
   collection, 
   onSnapshot, 
   doc, 
   setDoc, 
-  deleteDoc, 
-  writeBatch,
-  serverTimestamp 
+  deleteDoc 
 } from 'firebase/firestore';
+import { computeTagTethers, extractHashtags } from '../utils/tagParser';
+import { ambientAudio } from '../utils/ambientAudio';
 
 const SpaceContext = createContext(null);
 
-// Initial Default Sample Nodes for Instant Demonstration & Offline Fallback
 const INITIAL_NODES = {
   'node-1': {
     id: 'node-1',
     title: '🌌 Nebula Architecture',
-    content: 'Cloud-synced infinite spatial canvas engineered for high-leveraged thought management.',
+    content: 'Cloud-synced infinite spatial canvas engineered for high-leveraged thought management. Includes #pwa and #vite.',
     x: 0,
     y: 0,
     width: 320,
@@ -31,13 +30,13 @@ const INITIAL_NODES = {
   'node-2': {
     id: 'node-2',
     title: '🎨 HTML5 Canvas Engine',
-    content: '60FPS rendering pipeline featuring high-DPI scaling, elastic bezier tethers, & particle impulse streams.',
+    content: '60FPS rendering pipeline featuring high-DPI scaling, elastic bezier tethers, & particle impulse streams. Built for #pwa.',
     x: 450,
     y: -120,
     width: 300,
     height: 190,
     color: 'purple',
-    tags: ['Canvas', 'Physics', 'Retina'],
+    tags: ['Canvas', 'Physics', 'PWA'],
     pinned: false,
     createdAt: Date.now(),
     updatedAt: Date.now()
@@ -45,7 +44,7 @@ const INITIAL_NODES = {
   'node-3': {
     id: 'node-3',
     title: '🔥 Live Firestore Sync',
-    content: 'Optimistic local updates with debounced cloud persistence and multi-device realtime syncing.',
+    content: 'Optimistic local updates with debounced cloud persistence and multi-device realtime syncing with #firebase.',
     x: 450,
     y: 150,
     width: 300,
@@ -59,7 +58,7 @@ const INITIAL_NODES = {
   'node-4': {
     id: 'node-4',
     title: '⚡ Progressive Web App',
-    content: 'Offline-first service worker precaching, native install prompt, and zero-latency responsiveness.',
+    content: 'Offline-first service worker precaching, native install prompt, and zero-latency responsiveness for #pwa.',
     x: -420,
     y: 50,
     width: 300,
@@ -79,6 +78,9 @@ const INITIAL_LINKS = [
 ];
 
 export const SpaceProvider = ({ children }) => {
+  // Auth User State
+  const [currentUser, setCurrentUser] = useState(null);
+
   // Spatial Data State
   const [nodes, setNodes] = useState(() => {
     const saved = localStorage.getItem('nebula_nodes');
@@ -93,25 +95,41 @@ export const SpaceProvider = ({ children }) => {
   // Camera Matrix & Viewport State
   const [camera, setCamera] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 1.0 });
   const [selection, setSelection] = useState({ nodeIds: [], linkId: null });
-  const [activeTool, setActiveTool] = useState('select'); // 'select', 'node', 'tether', 'pan'
-  const [tetherDraft, setTetherDraft] = useState(null); // { sourceId, x, y }
+  const [activeTool, setActiveTool] = useState('select');
+  const [tetherDraft, setTetherDraft] = useState(null);
   
   // UI & Modal States
   const [editingNodeId, setEditingNodeId] = useState(null);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [syncStatus, setSyncStatus] = useState('synced'); // 'synced', 'syncing', 'offline'
+  const [syncStatus, setSyncStatus] = useState('synced');
   const [searchQuery, setSearchQuery] = useState('');
   const [pwaPrompt, setPwaPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isAudioActive, setIsAudioActive] = useState(false);
 
-  // Undo/Redo Stacks
-  const historyRef = useRef({ past: [], future: [] });
-
-  // Debounced write timer ref
   const pendingSyncRef = useRef({});
 
-  // LocalStorage Caching Sync
+  // Auth Listener
+  useEffect(() => {
+    if (!auth) return;
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Compute Organic Auto #Tag Tethers
+  const autoTagTethers = useMemo(() => {
+    return computeTagTethers(nodes);
+  }, [nodes]);
+
+  // Combine manual links with auto tag tethers
+  const allCombinedLinks = useMemo(() => {
+    return [...links, ...autoTagTethers];
+  }, [links, autoTagTethers]);
+
+  // LocalStorage Cache
   useEffect(() => {
     try {
       localStorage.setItem('nebula_nodes', JSON.stringify(nodes));
@@ -121,28 +139,25 @@ export const SpaceProvider = ({ children }) => {
     }
   }, [nodes, links]);
 
-  // PWA Install Event Listener
+  // PWA Prompt Listener
   useEffect(() => {
     const handleBeforeInstall = (e) => {
       e.preventDefault();
       setPwaPrompt(e);
     };
-
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setPwaPrompt(null);
     };
-
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
     window.addEventListener('appinstalled', handleAppInstalled);
-
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 
-  // Firebase Realtime Firestore Subscription
+  // Realtime Firestore Sync
   useEffect(() => {
     if (!db) {
       setSyncStatus('offline');
@@ -150,10 +165,11 @@ export const SpaceProvider = ({ children }) => {
     }
 
     setSyncStatus('syncing');
+    const collectionName = currentUser ? `users/${currentUser.uid}/nebula_thoughts` : 'nebula_thoughts';
+    const linksCollectionName = currentUser ? `users/${currentUser.uid}/nebula_links` : 'nebula_links';
 
-    // Subscribe to thoughts collection
     const unsubscribeThoughts = onSnapshot(
-      collection(db, 'nebula_thoughts'),
+      collection(db, collectionName),
       (snapshot) => {
         if (!snapshot.empty) {
           const cloudNodes = {};
@@ -161,8 +177,7 @@ export const SpaceProvider = ({ children }) => {
             cloudNodes[doc.id] = { id: doc.id, ...doc.data() };
           });
           setNodes((prev) => ({ ...prev, ...cloudNodes }));
-        } else {
-          // Push initial nodes if cloud collection is empty
+        } else if (!currentUser) {
           Object.values(INITIAL_NODES).forEach((node) => {
             setDoc(doc(db, 'nebula_thoughts', node.id), node).catch(console.error);
           });
@@ -170,92 +185,81 @@ export const SpaceProvider = ({ children }) => {
         setSyncStatus('synced');
       },
       (error) => {
-        console.warn('Firestore subscription warning (offline mode fallback):', error);
+        console.warn('Firestore subscription warning:', error);
         setSyncStatus('offline');
       }
     );
 
-    // Subscribe to links collection
     const unsubscribeLinks = onSnapshot(
-      collection(db, 'nebula_links'),
+      collection(db, linksCollectionName),
       (snapshot) => {
         if (!snapshot.empty) {
           const cloudLinks = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
           setLinks(cloudLinks);
-        } else {
+        } else if (!currentUser) {
           INITIAL_LINKS.forEach((link) => {
             setDoc(doc(db, 'nebula_links', link.id), link).catch(console.error);
           });
         }
       },
-      (error) => {
-        console.warn('Firestore links subscription warning:', error);
-      }
+      (error) => console.warn('Firestore links warning:', error)
     );
 
     return () => {
       unsubscribeThoughts();
       unsubscribeLinks();
     };
-  }, []);
+  }, [currentUser]);
 
-  // --- ACTIONS ---
-
-  // Sync a single node to Firestore (debounced or immediate)
+  // Sync Node to Cloud
   const syncNodeToCloud = useCallback((node, immediate = false) => {
     if (!db) return;
     setSyncStatus('syncing');
+    const collectionName = currentUser ? `users/${currentUser.uid}/nebula_thoughts` : 'nebula_thoughts';
 
     const updateDoc = () => {
-      setDoc(doc(db, 'nebula_thoughts', node.id), {
+      setDoc(doc(db, collectionName, node.id), {
         ...node,
         updatedAt: Date.now()
       }, { merge: true })
         .then(() => setSyncStatus('synced'))
-        .catch((e) => {
-          console.warn('Cloud sync write failed', e);
-          setSyncStatus('offline');
-        });
+        .catch(() => setSyncStatus('offline'));
     };
 
     if (immediate) {
-      if (pendingSyncRef.current[node.id]) {
-        clearTimeout(pendingSyncRef.current[node.id]);
-      }
+      if (pendingSyncRef.current[node.id]) clearTimeout(pendingSyncRef.current[node.id]);
       updateDoc();
     } else {
-      if (pendingSyncRef.current[node.id]) {
-        clearTimeout(pendingSyncRef.current[node.id]);
-      }
+      if (pendingSyncRef.current[node.id]) clearTimeout(pendingSyncRef.current[node.id]);
       pendingSyncRef.current[node.id] = setTimeout(updateDoc, 300);
     }
-  }, []);
+  }, [currentUser]);
 
-  // Sync a link to Firestore
+  // Sync Link to Cloud
   const syncLinkToCloud = useCallback((link) => {
     if (!db) return;
     setSyncStatus('syncing');
-    setDoc(doc(db, 'nebula_links', link.id), link)
+    const linksCollectionName = currentUser ? `users/${currentUser.uid}/nebula_links` : 'nebula_links';
+    setDoc(doc(db, linksCollectionName, link.id), link)
       .then(() => setSyncStatus('synced'))
-      .catch((e) => {
-        console.warn('Link sync failed', e);
-        setSyncStatus('offline');
-      });
-  }, []);
+      .catch(() => setSyncStatus('offline'));
+  }, [currentUser]);
 
-  // Create a new Thought Node
-  const createNode = useCallback((worldX, worldY, title = 'New Thought', color = 'cyan') => {
+  // Create Node Action
+  const createNode = useCallback((worldX, worldY, title = 'New Thought', color = 'cyan', content = '') => {
     const id = `node-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const parsedTags = extractHashtags(title + ' ' + content);
+
     const newNode = {
       id,
       title,
-      content: 'Click double-tap or edit icon to add detailed spatial notes...',
+      content: content || 'Click double-tap or edit icon to add detailed spatial notes...',
       x: worldX ?? (window.innerWidth / 2 - camera.x) / camera.zoom,
       y: worldY ?? (window.innerHeight / 2 - camera.y) / camera.zoom,
       width: 290,
       height: 180,
       color,
-      tags: ['Idea'],
+      tags: parsedTags.length > 0 ? parsedTags : ['Idea'],
       pinned: false,
       createdAt: Date.now(),
       updatedAt: Date.now()
@@ -264,37 +268,50 @@ export const SpaceProvider = ({ children }) => {
     setNodes((prev) => ({ ...prev, [id]: newNode }));
     setSelection({ nodeIds: [id], linkId: null });
     syncNodeToCloud(newNode, true);
+    ambientAudio.playNodeCreatedSound();
     return id;
   }, [camera, syncNodeToCloud]);
 
-  // Update existing node properties
+  // Update Node Action
   const updateNode = useCallback((id, updates, immediateSync = false) => {
     setNodes((prev) => {
       const existing = prev[id];
       if (!existing) return prev;
       const updated = { ...existing, ...updates, updatedAt: Date.now() };
+      
+      // Auto-extract tags if content or title changed
+      if (updates.title || updates.content) {
+        const text = (updated.title || '') + ' ' + (updated.content || '');
+        const autoTags = extractHashtags(text);
+        if (autoTags.length > 0) {
+          const combined = Array.from(new Set([...(updated.tags || []), ...autoTags]));
+          updated.tags = combined;
+        }
+      }
+
       syncNodeToCloud(updated, immediateSync);
       return { ...prev, [id]: updated };
     });
   }, [syncNodeToCloud]);
 
-  // Delete a node and all connected links
+  // Delete Node Action
   const deleteNode = useCallback((id) => {
     setNodes((prev) => {
       const next = { ...prev };
       delete next[id];
       return next;
     });
-
     setLinks((prev) => prev.filter((l) => l.sourceId !== id && l.targetId !== id));
     setSelection((prev) => ({ ...prev, nodeIds: prev.nodeIds.filter((nid) => nid !== id) }));
-
+    
     if (db) {
-      deleteDoc(doc(db, 'nebula_thoughts', id)).catch(console.error);
+      const collectionName = currentUser ? `users/${currentUser.uid}/nebula_thoughts` : 'nebula_thoughts';
+      deleteDoc(doc(db, collectionName, id)).catch(console.error);
     }
-  }, []);
+    ambientAudio.playDeleteSound();
+  }, [currentUser]);
 
-  // Create a connection link between two nodes
+  // Create Link Action
   const createLink = useCallback((sourceId, targetId, label = 'relates to', color = 'cyan') => {
     if (sourceId === targetId) return;
     const existing = links.find((l) => (l.sourceId === sourceId && l.targetId === targetId) || (l.sourceId === targetId && l.targetId === sourceId));
@@ -302,43 +319,47 @@ export const SpaceProvider = ({ children }) => {
 
     const id = `link-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const newLink = { id, sourceId, targetId, label, color };
-    
     setLinks((prev) => [...prev, newLink]);
     syncLinkToCloud(newLink);
+    ambientAudio.playTetherSound();
   }, [links, syncLinkToCloud]);
 
-  // Delete a connection link
+  // Delete Link Action
   const deleteLink = useCallback((linkId) => {
     setLinks((prev) => prev.filter((l) => l.id !== linkId));
     setSelection((prev) => ({ ...prev, linkId: null }));
     if (db) {
-      deleteDoc(doc(db, 'nebula_links', linkId)).catch(console.error);
+      const linksCollectionName = currentUser ? `users/${currentUser.uid}/nebula_links` : 'nebula_links';
+      deleteDoc(doc(db, linksCollectionName, linkId)).catch(console.error);
     }
-  }, []);
+    ambientAudio.playDeleteSound();
+  }, [currentUser]);
 
-  // Auto-Layout algorithm (Force-Directed Node Spatial Clustering)
+  // Cluster Orbit Constellations Auto-Layout Algorithm
   const autoLayout = useCallback(() => {
     const nodeKeys = Object.keys(nodes);
     if (nodeKeys.length === 0) return;
 
     const updated = { ...nodes };
-    const radius = Math.max(350, nodeKeys.length * 90);
+    const radius = Math.max(380, nodeKeys.length * 95);
     const angleStep = (2 * Math.PI) / nodeKeys.length;
 
     nodeKeys.forEach((key, index) => {
       const angle = index * angleStep;
+      // Add subtle orbital spiral offsets
+      const orbitOffset = (index % 2 === 0 ? 1 : 0.85);
       updated[key] = {
         ...updated[key],
-        x: Math.cos(angle) * radius,
-        y: Math.sin(angle) * radius,
+        x: Math.cos(angle) * radius * orbitOffset,
+        y: Math.sin(angle) * radius * orbitOffset,
         updatedAt: Date.now()
       };
       syncNodeToCloud(updated[key], true);
     });
 
     setNodes(updated);
-    // Center camera to origin
     setCamera({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 0.85 });
+    ambientAudio.playTetherSound();
   }, [nodes, syncNodeToCloud]);
 
   // Reset Camera View
@@ -346,7 +367,7 @@ export const SpaceProvider = ({ children }) => {
     setCamera({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 1.0 });
   }, []);
 
-  // Focus View on All Nodes
+  // Fit View
   const fitView = useCallback(() => {
     const nodeArray = Object.values(nodes);
     if (nodeArray.length === 0) return resetView();
@@ -377,14 +398,18 @@ export const SpaceProvider = ({ children }) => {
     });
   }, [nodes, resetView]);
 
-  // Prompt PWA Installation
+  // Audio Toggle Action
+  const toggleAmbientAudio = useCallback(() => {
+    const active = ambientAudio.toggleAudio();
+    setIsAudioActive(active);
+  }, []);
+
+  // PWA Install Prompt
   const triggerPwaInstall = useCallback(() => {
     if (pwaPrompt) {
       pwaPrompt.prompt();
       pwaPrompt.userChoice.then((choiceResult) => {
-        if (choiceResult.outcome === 'accepted') {
-          setIsInstalled(true);
-        }
+        if (choiceResult.outcome === 'accepted') setIsInstalled(true);
         setPwaPrompt(null);
       });
     }
@@ -393,8 +418,12 @@ export const SpaceProvider = ({ children }) => {
   return (
     <SpaceContext.Provider
       value={{
+        currentUser,
+        signInWithGoogle,
+        signOutUser,
         nodes,
-        links,
+        links: allCombinedLinks,
+        manualLinks: links,
         camera,
         setCamera,
         selection,
@@ -414,6 +443,8 @@ export const SpaceProvider = ({ children }) => {
         setSearchQuery,
         pwaPrompt,
         isInstalled,
+        isAudioActive,
+        toggleAmbientAudio,
         triggerPwaInstall,
         createNode,
         updateNode,

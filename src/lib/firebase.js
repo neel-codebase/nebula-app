@@ -1,5 +1,12 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  signOut as firebaseSignOut, 
+  onAuthStateChanged 
+} from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -10,11 +17,13 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase
+// Initialize Firebase App & Services
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
 
-// Enable offline persistence (graceful fallback if already initialized)
+// Enable offline persistence
 try {
   enableIndexedDbPersistence(db).catch((err) => {
     if (err.code === 'failed-precondition') {
@@ -24,7 +33,27 @@ try {
     }
   });
 } catch (e) {
-  // Ignore error if persistence not supported
+  // Ignore
 }
 
-export { app, db };
+// Google Sign-in helper
+const signInWithGoogle = async () => {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    return result.user;
+  } catch (error) {
+    console.warn('Google Sign-in failed or cancelled:', error.message);
+    throw error;
+  }
+};
+
+// Sign-out helper
+const signOutUser = async () => {
+  try {
+    await firebaseSignOut(auth);
+  } catch (error) {
+    console.warn('Sign-out error:', error.message);
+  }
+};
+
+export { app, db, auth, googleProvider, signInWithGoogle, signOutUser, onAuthStateChanged };

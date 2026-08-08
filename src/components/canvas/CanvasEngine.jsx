@@ -24,19 +24,17 @@ const getCardAnchorPoint = (source, target) => {
   const halfHeight = source.height / 2;
 
   if (Math.abs(dx) * halfHeight > Math.abs(dy) * halfWidth) {
-    // Intersects left or right edge
     const x = dx > 0 ? srcCenterX + halfWidth : srcCenterX - halfWidth;
     const y = srcCenterY + (dy * halfWidth) / Math.abs(dx);
     return { x, y };
   } else {
-    // Intersects top or bottom edge
     const y = dy > 0 ? srcCenterY + halfHeight : srcCenterY - halfHeight;
     const x = srcCenterX + (dx * halfHeight) / Math.abs(dy);
     return { x, y };
   }
 };
 
-export const CanvasEngine = ({ onNodeSelect, onCanvasClick }) => {
+export const CanvasEngine = ({ onCanvasClick }) => {
   const canvasRef = useRef(null);
   const {
     nodes,
@@ -44,7 +42,6 @@ export const CanvasEngine = ({ onNodeSelect, onCanvasClick }) => {
     camera,
     setCamera,
     selection,
-    setSelection,
     activeTool,
     tetherDraft,
     setTetherDraft,
@@ -57,14 +54,14 @@ export const CanvasEngine = ({ onNodeSelect, onCanvasClick }) => {
   const animFrameRef = useRef(null);
   const particlesRef = useRef([]);
 
-  // Generate background ambient particles once
+  // Generate background ambient starfield particles
   useEffect(() => {
     const particles = [];
-    for (let i = 0; i < 120; i++) {
+    for (let i = 0; i < 140; i++) {
       particles.push({
-        x: (Math.random() - 0.5) * 4000,
-        y: (Math.random() - 0.5) * 4000,
-        size: Math.random() * 2 + 0.8,
+        x: (Math.random() - 0.5) * 4500,
+        y: (Math.random() - 0.5) * 4500,
+        size: Math.random() * 2.2 + 0.8,
         alpha: Math.random() * 0.7 + 0.2,
         speed: Math.random() * 0.4 + 0.1,
       });
@@ -72,7 +69,6 @@ export const CanvasEngine = ({ onNodeSelect, onCanvasClick }) => {
     particlesRef.current = particles;
   }, []);
 
-  // Screen to World transformation helper
   const screenToWorld = useCallback((screenX, screenY) => {
     return {
       x: (screenX - camera.x) / camera.zoom,
@@ -103,16 +99,16 @@ export const CanvasEngine = ({ onNodeSelect, onCanvasClick }) => {
       ctx.save();
       ctx.scale(dpr, dpr);
 
-      // 1. Clear background (Obsidian space)
+      // Clear background
       ctx.fillStyle = '#030712';
       ctx.fillRect(0, 0, width, height);
 
-      // 2. Draw Parallax Background Grid & Starfield
+      // Parallax Grid & Starfield
       ctx.save();
       ctx.translate(camera.x, camera.y);
       ctx.scale(camera.zoom, camera.zoom);
 
-      // Draw Grid Lines
+      // Grid
       const gridSize = 80;
       const startX = Math.floor((-camera.x / camera.zoom) / gridSize) * gridSize - gridSize;
       const endX = Math.ceil((width - camera.x) / camera.zoom / gridSize) * gridSize + gridSize;
@@ -122,7 +118,6 @@ export const CanvasEngine = ({ onNodeSelect, onCanvasClick }) => {
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
       ctx.lineWidth = 1 / camera.zoom;
       ctx.beginPath();
-
       for (let x = startX; x <= endX; x += gridSize) {
         ctx.moveTo(x, startY);
         ctx.lineTo(x, endY);
@@ -133,17 +128,16 @@ export const CanvasEngine = ({ onNodeSelect, onCanvasClick }) => {
       }
       ctx.stroke();
 
-      // Draw Parallax Particles / Starfield
+      // Starfield
       particlesRef.current.forEach((p) => {
-        const px = p.x;
         const py = p.y + Math.sin(time + p.x) * 4;
         ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha * 0.8})`;
         ctx.beginPath();
-        ctx.arc(px, py, p.size / Math.max(camera.zoom, 0.5), 0, Math.PI * 2);
+        ctx.arc(p.x, py, p.size / Math.max(camera.zoom, 0.5), 0, Math.PI * 2);
         ctx.fill();
       });
 
-      // 3. Draw Links & Tethers
+      // Links & Tethers (Manual & Auto #Tag Tethers)
       links.forEach((link) => {
         const sourceNode = nodes[link.sourceId];
         const targetNode = nodes[link.targetId];
@@ -155,30 +149,35 @@ export const CanvasEngine = ({ onNodeSelect, onCanvasClick }) => {
 
         const isSelected = selection.linkId === link.id;
         const palette = COLOR_MAP[link.color || 'cyan'] || COLOR_MAP.cyan;
+        const isAutoTag = link.isAutoTag;
 
-        // Curve Control Points for Cubic Bezier
         const dx = tgtAnchor.x - srcAnchor.x;
         const dy = tgtAnchor.y - srcAnchor.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
 
         const cp1x = srcAnchor.x + dx * 0.4;
         const cp1y = srcAnchor.y + (dy > 0 ? 30 : -30);
         const cp2x = tgtAnchor.x - dx * 0.4;
         const cp2y = tgtAnchor.y + (dy > 0 ? -30 : 30);
 
-        // Draw Outer Tether Glow
-        ctx.strokeStyle = isSelected ? palette.main : palette.glow;
-        ctx.lineWidth = (isSelected ? 3.5 : 2.0) / camera.zoom;
+        ctx.save();
+        if (isAutoTag) {
+          ctx.setLineDash([6 / camera.zoom, 5 / camera.zoom]);
+        }
+
+        // Draw Tether Line
+        ctx.strokeStyle = isSelected ? palette.main : isAutoTag ? palette.glow : palette.glow;
+        ctx.lineWidth = (isSelected ? 3.5 : isAutoTag ? 1.8 : 2.0) / camera.zoom;
         ctx.beginPath();
         ctx.moveTo(srcAnchor.x, srcAnchor.y);
         ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, tgtAnchor.x, tgtAnchor.y);
         ctx.stroke();
 
-        // Draw Flowing Impulse Particles along link
-        const impulseCount = 2;
+        ctx.restore();
+
+        // Flowing Energy Impulse
+        const impulseCount = isAutoTag ? 1 : 2;
         for (let i = 0; i < impulseCount; i++) {
-          const progress = ((time * 0.6 + i / impulseCount) % 1);
-          // Cubic Bezier interpolation formula
+          const progress = ((time * (isAutoTag ? 0.4 : 0.6) + i / impulseCount) % 1);
           const t = progress;
           const u = 1 - t;
           const tt = t * t;
@@ -193,47 +192,39 @@ export const CanvasEngine = ({ onNodeSelect, onCanvasClick }) => {
           ctx.beginPath();
           ctx.arc(px, py, (isSelected ? 4.5 : 3.0) / camera.zoom, 0, Math.PI * 2);
           ctx.fill();
-
-          // Particle Glow Ring
-          ctx.fillStyle = palette.glow;
-          ctx.beginPath();
-          ctx.arc(px, py, (isSelected ? 8.0 : 6.0) / camera.zoom, 0, Math.PI * 2);
-          ctx.fill();
         }
 
-        // Draw Link Label Pill at curve midpoint
+        // Link Label Pill
         if (link.label) {
-          const midT = 0.5;
-          const midU = 0.5;
           const mx = 0.125 * srcAnchor.x + 0.375 * cp1x + 0.375 * cp2x + 0.125 * tgtAnchor.x;
           const my = 0.125 * srcAnchor.y + 0.375 * cp1y + 0.375 * cp2y + 0.125 * tgtAnchor.y;
 
-          ctx.font = `500 ${Math.max(11, 12 / camera.zoom)}px Inter, sans-serif`;
+          ctx.font = `500 ${Math.max(10, 11 / camera.zoom)}px Inter, sans-serif`;
           const textWidth = ctx.measureText(link.label).width;
-          const pillPadding = 8;
+          const pillPadding = 7;
 
-          ctx.fillStyle = 'rgba(11, 15, 25, 0.9)';
+          ctx.fillStyle = isAutoTag ? 'rgba(3, 7, 18, 0.95)' : 'rgba(11, 15, 25, 0.9)';
           ctx.strokeStyle = palette.main;
           ctx.lineWidth = 1 / camera.zoom;
           ctx.beginPath();
           ctx.roundRect(
             mx - textWidth / 2 - pillPadding,
-            my - 11,
+            my - 10,
             textWidth + pillPadding * 2,
-            22,
-            11
+            20,
+            10
           );
           ctx.fill();
           ctx.stroke();
 
-          ctx.fillStyle = '#f3f4f6';
+          ctx.fillStyle = isAutoTag ? palette.main : '#f3f4f6';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(link.label, mx, my);
         }
       });
 
-      // 4. Draw Active Tether Draft Line (when dragging tether handle)
+      // Active Tether Draft Line
       if (tetherDraft && nodes[tetherDraft.sourceId]) {
         const srcNode = nodes[tetherDraft.sourceId];
         const srcAnchor = {
@@ -251,7 +242,6 @@ export const CanvasEngine = ({ onNodeSelect, onCanvasClick }) => {
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Target Cursor Particle
         ctx.fillStyle = '#06b6d4';
         ctx.beginPath();
         ctx.arc(tetherDraft.x, tetherDraft.y, 6 / camera.zoom, 0, Math.PI * 2);
@@ -267,13 +257,10 @@ export const CanvasEngine = ({ onNodeSelect, onCanvasClick }) => {
     render();
 
     return () => {
-      if (animFrameRef.current) {
-        cancelAnimationFrame(animFrameRef.current);
-      }
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
   }, [camera, nodes, links, selection, tetherDraft]);
 
-  // Handle Wheel Event for Smooth Exponential Zoom
   const handleWheel = (e) => {
     e.preventDefault();
     const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
@@ -288,14 +275,12 @@ export const CanvasEngine = ({ onNodeSelect, onCanvasClick }) => {
     setCamera({ x: newX, y: newY, zoom: newZoom });
   };
 
-  // Handle Mouse Down (Pan or Select Canvas)
   const handleMouseDown = (e) => {
     if (e.button === 1 || e.button === 2 || e.spaceKey || activeTool === 'pan') {
       isPanningRef.current = true;
       startPanRef.current = { x: e.clientX - camera.x, y: e.clientY - camera.y };
       return;
     }
-
     if (e.target === canvasRef.current) {
       if (activeTool === 'node') {
         const worldPos = screenToWorld(e.clientX, e.clientY);
@@ -306,7 +291,6 @@ export const CanvasEngine = ({ onNodeSelect, onCanvasClick }) => {
     }
   };
 
-  // Handle Mouse Move
   const handleMouseMove = (e) => {
     if (isPanningRef.current) {
       setCamera((prev) => ({
@@ -320,13 +304,9 @@ export const CanvasEngine = ({ onNodeSelect, onCanvasClick }) => {
     }
   };
 
-  // Handle Mouse Up
   const handleMouseUp = (e) => {
-    if (isPanningRef.current) {
-      isPanningRef.current = false;
-    }
+    if (isPanningRef.current) isPanningRef.current = false;
     if (tetherDraft) {
-      // Check if dropped over a target node card
       const worldPos = screenToWorld(e.clientX, e.clientY);
       const targetNode = Object.values(nodes).find((n) => {
         return (
