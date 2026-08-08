@@ -1,0 +1,228 @@
+import React, { useState, useEffect } from 'react';
+import { useSpace } from '../../context/SpaceContext';
+import { 
+  X, 
+  Trash2, 
+  Tag, 
+  Pin, 
+  Check, 
+  Sparkles, 
+  Palette
+} from 'lucide-react';
+
+const COLOR_OPTIONS = [
+  { id: 'cyan', label: 'Cyan', bg: 'bg-cyan-500', border: 'border-cyan-400' },
+  { id: 'purple', label: 'Purple', bg: 'bg-purple-500', border: 'border-purple-400' },
+  { id: 'emerald', label: 'Emerald', bg: 'bg-emerald-500', border: 'border-emerald-400' },
+  { id: 'amber', label: 'Amber', bg: 'bg-amber-500', border: 'border-amber-400' },
+  { id: 'rose', label: 'Rose', bg: 'bg-rose-500', border: 'border-rose-400' },
+  { id: 'indigo', label: 'Indigo', bg: 'bg-indigo-500', border: 'border-indigo-400' },
+];
+
+export const NodeModal = () => {
+  const {
+    editingNodeId,
+    setEditingNodeId,
+    nodes,
+    updateNode,
+    deleteNode
+  } = useSpace();
+
+  const node = editingNodeId ? nodes[editingNodeId] : null;
+
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState('');
+  const [color, setColor] = useState('cyan');
+  const [pinned, setPinned] = useState(false);
+
+  useEffect(() => {
+    if (node) {
+      setTitle(node.title || '');
+      setContent(node.content || '');
+      setTags(node.tags || []);
+      setColor(node.color || 'cyan');
+      setPinned(node.pinned || false);
+    }
+  }, [node]);
+
+  if (!node) return null;
+
+  const handleSave = () => {
+    updateNode(
+      node.id,
+      {
+        title: title.trim() || 'Untitled Thought',
+        content,
+        tags,
+        color,
+        pinned,
+      },
+      true
+    );
+    setEditingNodeId(null);
+  };
+
+  const handleAddTag = (e) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      e.preventDefault();
+      if (!tags.includes(tagInput.trim())) {
+        setTags([...tags, tagInput.trim()]);
+      }
+      setTagInput('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove) => {
+    setTags(tags.filter((t) => t !== tagToRemove));
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
+      <div className="w-full max-w-lg glass-panel rounded-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col p-6 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-cyan-400" />
+            <h3 className="font-bold text-sm text-white">Edit Thought Node</h3>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPinned(!pinned)}
+              className={`p-1.5 rounded-lg border transition-colors ${
+                pinned
+                  ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                  : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10'
+              }`}
+              title={pinned ? 'Unpin' : 'Pin to top'}
+            >
+              <Pin className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={() => setEditingNodeId(null)}
+              className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Title Input */}
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+            Thought Title
+          </label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Enter thought title..."
+            className="w-full px-3 py-2 text-sm rounded-xl glass-input font-medium"
+            autoFocus
+          />
+        </div>
+
+        {/* Content Area */}
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+            Spatial Notes / Content
+          </label>
+          <textarea
+            rows={5}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Write detailed spatial thoughts, links, markdown..."
+            className="w-full px-3 py-2 text-xs rounded-xl glass-input resize-none leading-relaxed font-mono"
+          />
+        </div>
+
+        {/* Color Palette Selector */}
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+            <Palette className="w-3 h-3 text-cyan-400" />
+            Accent Glow Color
+          </label>
+          <div className="flex items-center gap-2">
+            {COLOR_OPTIONS.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setColor(c.id)}
+                className={`w-7 h-7 rounded-xl ${c.bg} flex items-center justify-center transition-all ${
+                  color === c.id ? 'ring-2 ring-white scale-110 shadow-lg' : 'opacity-70 hover:opacity-100'
+                }`}
+              >
+                {color === c.id && <Check className="w-3.5 h-3.5 text-white" />}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tags Editor */}
+        <div>
+          <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
+            Tags (Press Enter to Add)
+          </label>
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            {tags.map((tag) => (
+              <span
+                key={tag}
+                className="px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-medium flex items-center gap-1.5"
+              >
+                <Tag className="w-3 h-3" />
+                {tag}
+                <button
+                  onClick={() => handleRemoveTag(tag)}
+                  className="hover:text-rose-400 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+          <input
+            type="text"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={handleAddTag}
+            placeholder="Add tag (e.g. Architecture, Physics)..."
+            className="w-full px-3 py-1.5 text-xs rounded-xl glass-input"
+          />
+        </div>
+
+        {/* Footer Actions */}
+        <div className="flex items-center justify-between pt-3 border-t border-white/10">
+          <button
+            onClick={() => {
+              deleteNode(node.id);
+              setEditingNodeId(null);
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-rose-400 hover:bg-rose-500/20 text-xs font-semibold transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Delete Thought</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setEditingNodeId(null)}
+              className="px-4 py-2 rounded-xl text-slate-300 hover:bg-white/10 text-xs font-semibold transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-bold shadow-glow-cyan transition-all"
+            >
+              <Check className="w-4 h-4" />
+              <span>Save Changes</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

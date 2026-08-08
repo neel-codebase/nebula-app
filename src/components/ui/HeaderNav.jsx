@@ -1,0 +1,126 @@
+import React from 'react';
+import { useSpace } from '../../context/SpaceContext';
+import { 
+  Sparkles, 
+  Cloud, 
+  CloudOff, 
+  RefreshCw, 
+  Download, 
+  PanelLeft, 
+  Search,
+  Plus,
+  Compass
+} from 'lucide-react';
+
+export const HeaderNav = () => {
+  const {
+    nodes,
+    links,
+    syncStatus,
+    setIsSidebarOpen,
+    setIsCommandPaletteOpen,
+    pwaPrompt,
+    triggerPwaInstall,
+    isInstalled,
+    createNode
+  } = useSpace();
+
+  const totalNodes = Object.keys(nodes).length;
+  const totalLinks = links.length;
+
+  return (
+    <header className="absolute top-4 left-4 right-4 z-30 pointer-events-none flex items-center justify-between gap-4">
+      {/* Left Brand & Sidebar Trigger */}
+      <div className="pointer-events-auto flex items-center gap-3 glass-panel px-4 py-2.5 rounded-2xl">
+        <button
+          onClick={() => setIsSidebarOpen((prev) => !prev)}
+          className="p-1.5 rounded-xl hover:bg-white/10 text-slate-300 transition-colors"
+          title="Toggle index drawer"
+        >
+          <PanelLeft className="w-4 h-4" />
+        </button>
+
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center shadow-glow-cyan">
+            <Sparkles className="w-4 h-4 text-white animate-spin-slow" />
+          </div>
+          <div>
+            <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
+              Nebula
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                PWA v2.0
+              </span>
+            </h1>
+            <p className="text-[11px] text-slate-400 font-medium">Spatial Thought Engine</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Middle Quick Actions & Search trigger */}
+      <div className="pointer-events-auto hidden md:flex items-center gap-2 glass-panel px-3 py-1.5 rounded-2xl">
+        <button
+          onClick={() => setIsCommandPaletteOpen(true)}
+          className="flex items-center gap-3 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:border-cyan-500/40 text-slate-300 text-xs transition-all"
+        >
+          <Search className="w-3.5 h-3.5 text-cyan-400" />
+          <span>Search thoughts & tools...</span>
+          <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/40 text-slate-400 border border-white/10">
+            ⌘K
+          </kbd>
+        </button>
+
+        <div className="h-4 w-px bg-white/10 my-auto" />
+
+        <button
+          onClick={() => createNode(null, null, 'New Thought', 'cyan')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/20 border border-cyan-500/30 hover:bg-cyan-500/30 text-cyan-300 text-xs font-medium transition-all"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add Thought</span>
+        </button>
+      </div>
+
+      {/* Right Stats & Sync Status */}
+      <div className="pointer-events-auto flex items-center gap-3 glass-panel px-4 py-2.5 rounded-2xl">
+        {/* Graph Stats Pill */}
+        <div className="hidden sm:flex items-center gap-3 text-xs text-slate-300 font-medium border-r border-white/10 pr-3">
+          <span><strong className="text-cyan-400">{totalNodes}</strong> Thoughts</span>
+          <span><strong className="text-purple-400">{totalLinks}</strong> Tethers</span>
+        </div>
+
+        {/* Sync Status Badge */}
+        <div className="flex items-center gap-1.5 text-xs font-medium">
+          {syncStatus === 'synced' && (
+            <span className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-xl">
+              <Cloud className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Synced</span>
+            </span>
+          )}
+          {syncStatus === 'syncing' && (
+            <span className="flex items-center gap-1.5 text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-xl">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              <span className="hidden sm:inline">Syncing...</span>
+            </span>
+          )}
+          {syncStatus === 'offline' && (
+            <span className="flex items-center gap-1.5 text-slate-400 bg-slate-500/10 border border-slate-500/20 px-2.5 py-1 rounded-xl">
+              <CloudOff className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Local Cache</span>
+            </span>
+          )}
+        </div>
+
+        {/* PWA Install Button */}
+        {pwaPrompt && !isInstalled && (
+          <button
+            onClick={triggerPwaInstall}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-glow-purple transition-all"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Install App</span>
+          </button>
+        )}
+      </div>
+    </header>
+  );
+};

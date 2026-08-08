@@ -1,0 +1,17 @@
+{
+  "name": "Nebula — Spatial Thought Canvas",
+  "short_name": "Nebula",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#030712",
+  "description": "Cloud-synced infinite canvas Progressive Web App for spatial thought management.",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
