@@ -25,11 +25,11 @@ const getCardAnchorPoint = (source, target) => {
 
   if (Math.abs(dx) * halfHeight > Math.abs(dy) * halfWidth) {
     const x = dx > 0 ? srcCenterX + halfWidth : srcCenterX - halfWidth;
-    const y = srcCenterY + (dy * halfWidth) / Math.abs(dx);
+    const y = srcCenterY + (dy * halfWidth) / Math.max(Math.abs(dx), 1);
     return { x, y };
   } else {
     const y = dy > 0 ? srcCenterY + halfHeight : srcCenterY - halfHeight;
-    const x = srcCenterX + (dx * halfHeight) / Math.abs(dy);
+    const x = srcCenterX + (dx * halfHeight) / Math.max(Math.abs(dy), 1);
     return { x, y };
   }
 };
@@ -51,19 +51,22 @@ export const CanvasEngine = ({ onCanvasClick }) => {
 
   const isPanningRef = useRef(false);
   const startPanRef = useRef({ x: 0, y: 0 });
+  const mouseWorldRef = useRef({ x: 0, y: 0 });
   const animFrameRef = useRef(null);
   const particlesRef = useRef([]);
 
-  // Generate background ambient starfield particles
+  // Initialize Pythagorean Gravity Nexus Particles
   useEffect(() => {
     const particles = [];
-    for (let i = 0; i < 140; i++) {
+    const count = 90;
+    for (let i = 0; i < count; i++) {
       particles.push({
-        x: (Math.random() - 0.5) * 4500,
-        y: (Math.random() - 0.5) * 4500,
-        size: Math.random() * 2.2 + 0.8,
-        alpha: Math.random() * 0.7 + 0.2,
-        speed: Math.random() * 0.4 + 0.1,
+        x: (Math.random() - 0.5) * 3500,
+        y: (Math.random() - 0.5) * 3500,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: (Math.random() - 0.5) * 0.6,
+        radius: Math.random() * 2 + 1,
+        alpha: Math.random() * 0.6 + 0.3,
       });
     }
     particlesRef.current = particles;
@@ -99,23 +102,23 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       ctx.save();
       ctx.scale(dpr, dpr);
 
-      // Clear background
+      // Clear space background
       ctx.fillStyle = '#030712';
       ctx.fillRect(0, 0, width, height);
 
-      // Parallax Grid & Starfield
+      // Transform viewport matrix
       ctx.save();
       ctx.translate(camera.x, camera.y);
       ctx.scale(camera.zoom, camera.zoom);
 
-      // Grid
+      // 1. Grid Pattern
       const gridSize = 80;
       const startX = Math.floor((-camera.x / camera.zoom) / gridSize) * gridSize - gridSize;
       const endX = Math.ceil((width - camera.x) / camera.zoom / gridSize) * gridSize + gridSize;
       const startY = Math.floor((-camera.y / camera.zoom) / gridSize) * gridSize - gridSize;
       const endY = Math.ceil((height - camera.y) / camera.zoom / gridSize) * gridSize + gridSize;
 
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
       ctx.lineWidth = 1 / camera.zoom;
       ctx.beginPath();
       for (let x = startX; x <= endX; x += gridSize) {
@@ -128,16 +131,61 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       }
       ctx.stroke();
 
-      // Starfield
-      particlesRef.current.forEach((p) => {
-        const py = p.y + Math.sin(time + p.x) * 4;
-        ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha * 0.8})`;
+      // 2. Pythagorean Gravity Nexus Particle Simulation
+      const particles = particlesRef.current;
+      const mouseWorld = mouseWorldRef.current;
+
+      // Update particle positions with physics & cursor gravity
+      particles.forEach((p) => {
+        // Gravitational warping towards mouse cursor
+        const dxMouse = mouseWorld.x - p.x;
+        const dyMouse = mouseWorld.y - p.y;
+        const distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
+
+        if (distMouse < 300) {
+          const force = (300 - distMouse) / 300 * 0.15;
+          p.vx += (dxMouse / distMouse) * force;
+          p.vy += (dyMouse / distMouse) * force;
+        }
+
+        // Apply friction / velocity dampening
+        p.vx *= 0.98;
+        p.vy *= 0.98;
+
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Draw particle dot
+        ctx.fillStyle = `rgba(6, 182, 212, ${p.alpha})`;
         ctx.beginPath();
-        ctx.arc(p.x, py, p.size / Math.max(camera.zoom, 0.5), 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.radius / Math.max(camera.zoom, 0.5), 0, Math.PI * 2);
         ctx.fill();
       });
 
-      // Links & Tethers (Manual & Auto #Tag Tethers)
+      // Calculate Pythagorean distances and draw geometric nexus lines
+      const nexusThreshold = 180;
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const p1 = particles[i];
+          const p2 = particles[j];
+
+          const dx = p2.x - p1.x;
+          const dy = p2.y - p1.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < nexusThreshold) {
+            const lineAlpha = (1 - dist / nexusThreshold) * 0.25;
+            ctx.strokeStyle = `rgba(6, 182, 212, ${lineAlpha})`;
+            ctx.lineWidth = 1 / camera.zoom;
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // 3. Links & Tethers (Manual Solid Curves vs Auto Dotted Curves)
       links.forEach((link) => {
         const sourceNode = nodes[link.sourceId];
         const targetNode = nodes[link.targetId];
@@ -162,19 +210,20 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         ctx.save();
         if (isAutoTag) {
           ctx.setLineDash([6 / camera.zoom, 5 / camera.zoom]);
+          ctx.strokeStyle = palette.main;
+        } else {
+          ctx.setLineDash([]);
+          ctx.strokeStyle = isSelected ? '#ffffff' : palette.main;
         }
 
-        // Draw Tether Line
-        ctx.strokeStyle = isSelected ? palette.main : isAutoTag ? palette.glow : palette.glow;
-        ctx.lineWidth = (isSelected ? 3.5 : isAutoTag ? 1.8 : 2.0) / camera.zoom;
+        ctx.lineWidth = (isSelected ? 3.5 : isAutoTag ? 1.8 : 2.2) / camera.zoom;
         ctx.beginPath();
         ctx.moveTo(srcAnchor.x, srcAnchor.y);
         ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, tgtAnchor.x, tgtAnchor.y);
         ctx.stroke();
-
         ctx.restore();
 
-        // Flowing Energy Impulse
+        // Flowing Energy Impulse Dot
         const impulseCount = isAutoTag ? 1 : 2;
         for (let i = 0; i < impulseCount; i++) {
           const progress = ((time * (isAutoTag ? 0.4 : 0.6) + i / impulseCount) % 1);
@@ -188,7 +237,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
           const px = uuu * srcAnchor.x + 3 * uu * t * cp1x + 3 * u * tt * cp2x + ttt * tgtAnchor.x;
           const py = uuu * srcAnchor.y + 3 * uu * t * cp1y + 3 * u * tt * cp2y + ttt * tgtAnchor.y;
 
-          ctx.fillStyle = palette.main;
+          ctx.fillStyle = isAutoTag ? palette.main : '#ffffff';
           ctx.beginPath();
           ctx.arc(px, py, (isSelected ? 4.5 : 3.0) / camera.zoom, 0, Math.PI * 2);
           ctx.fill();
@@ -203,7 +252,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
           const textWidth = ctx.measureText(link.label).width;
           const pillPadding = 7;
 
-          ctx.fillStyle = isAutoTag ? 'rgba(3, 7, 18, 0.95)' : 'rgba(11, 15, 25, 0.9)';
+          ctx.fillStyle = isAutoTag ? 'rgba(3, 7, 18, 0.95)' : 'rgba(11, 15, 25, 0.95)';
           ctx.strokeStyle = palette.main;
           ctx.lineWidth = 1 / camera.zoom;
           ctx.beginPath();
@@ -224,7 +273,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         }
       });
 
-      // Active Tether Draft Line
+      // 4. Active Tether Draft Line (During Drag-to-Connect)
       if (tetherDraft && nodes[tetherDraft.sourceId]) {
         const srcNode = nodes[tetherDraft.sourceId];
         const srcAnchor = {
@@ -244,7 +293,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
 
         ctx.fillStyle = '#06b6d4';
         ctx.beginPath();
-        ctx.arc(tetherDraft.x, tetherDraft.y, 6 / camera.zoom, 0, Math.PI * 2);
+        ctx.arc(tetherDraft.x, tetherDraft.y, 7 / camera.zoom, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -292,6 +341,9 @@ export const CanvasEngine = ({ onCanvasClick }) => {
   };
 
   const handleMouseMove = (e) => {
+    const worldPos = screenToWorld(e.clientX, e.clientY);
+    mouseWorldRef.current = worldPos;
+
     if (isPanningRef.current) {
       setCamera((prev) => ({
         ...prev,
@@ -299,7 +351,6 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         y: e.clientY - startPanRef.current.y
       }));
     } else if (tetherDraft) {
-      const worldPos = screenToWorld(e.clientX, e.clientY);
       setTetherDraft((prev) => (prev ? { ...prev, x: worldPos.x, y: worldPos.y } : null));
     }
   };

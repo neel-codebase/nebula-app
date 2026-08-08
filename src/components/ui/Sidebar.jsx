@@ -7,9 +7,7 @@ import {
   Compass, 
   Sparkles, 
   Pin, 
-  Plus, 
-  Trash2,
-  Share2
+  Trash2
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -20,7 +18,6 @@ export const Sidebar = () => {
     setIsSidebarOpen,
     setCamera,
     setSelection,
-    createNode,
     deleteNode,
     autoLayout
   } = useSpace();
@@ -32,7 +29,6 @@ export const Sidebar = () => {
 
   const nodeArray = Object.values(nodes);
   
-  // Extract all unique tags across all thoughts
   const allTags = Array.from(
     new Set(nodeArray.flatMap((n) => n.tags || []))
   );
@@ -44,6 +40,9 @@ export const Sidebar = () => {
     const matchesTag = !selectedTag || (node.tags && node.tags.includes(selectedTag));
     return matchesQuery && matchesTag;
   });
+
+  // Step 5: Sort pinned notes to top of sidebar index
+  filteredNodes.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 
   const focusNode = (node) => {
     setSelection({ nodeIds: [node.id], linkId: null });
@@ -112,17 +111,21 @@ export const Sidebar = () => {
           </div>
         )}
 
-        {/* Thoughts List */}
+        {/* Thoughts List (Sorted by Pinned First) */}
         <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
           {filteredNodes.map((node) => (
             <div
               key={node.id}
               onClick={() => focusNode(node)}
-              className="p-3 rounded-xl bg-white/5 border border-white/5 hover:border-cyan-500/30 hover:bg-white/10 cursor-pointer transition-all group flex items-start justify-between gap-2"
+              className={`p-3 rounded-xl border transition-all group flex items-start justify-between gap-2 cursor-pointer ${
+                node.pinned
+                  ? 'bg-amber-500/10 border-amber-500/30 hover:border-amber-400'
+                  : 'bg-white/5 border-white/5 hover:border-cyan-500/30 hover:bg-white/10'
+              }`}
             >
               <div className="overflow-hidden">
                 <div className="flex items-center gap-1.5 mb-1">
-                  {node.pinned && <Pin className="w-3 h-3 text-amber-400 flex-shrink-0" />}
+                  {node.pinned && <Pin className="w-3 h-3 text-amber-400 flex-shrink-0 fill-amber-400/20" />}
                   <h4 className="font-semibold text-xs text-white truncate group-hover:text-cyan-300">
                     {node.title}
                   </h4>

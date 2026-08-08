@@ -7,7 +7,9 @@ import {
   Pin, 
   Check, 
   Sparkles, 
-  Palette
+  Palette,
+  Link2,
+  Edit2
 } from 'lucide-react';
 
 const COLOR_OPTIONS = [
@@ -24,8 +26,11 @@ export const NodeModal = () => {
     editingNodeId,
     setEditingNodeId,
     nodes,
+    manualLinks,
     updateNode,
-    deleteNode
+    deleteNode,
+    deleteLink,
+    createLink
   } = useSpace();
 
   const node = editingNodeId ? nodes[editingNodeId] : null;
@@ -49,6 +54,11 @@ export const NodeModal = () => {
 
   if (!node) return null;
 
+  // Active manual links connected to this node
+  const activeNodeLinks = (manualLinks || []).filter(
+    (l) => l.sourceId === node.id || l.targetId === node.id
+  );
+
   const handleSave = () => {
     updateNode(
       node.id,
@@ -67,8 +77,9 @@ export const NodeModal = () => {
   const handleAddTag = (e) => {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault();
-      if (!tags.includes(tagInput.trim())) {
-        setTags([...tags, tagInput.trim()]);
+      const clean = tagInput.trim().replace(/^#/, '').toLowerCase();
+      if (!tags.includes(clean)) {
+        setTags([...tags, clean]);
       }
       setTagInput('');
     }
@@ -80,7 +91,7 @@ export const NodeModal = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
-      <div className="w-full max-w-lg glass-panel rounded-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col p-6 space-y-4">
+      <div className="w-full max-w-lg glass-panel rounded-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
@@ -131,10 +142,10 @@ export const NodeModal = () => {
             Spatial Notes / Content
           </label>
           <textarea
-            rows={5}
+            rows={4}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Write detailed spatial thoughts, links, markdown..."
+            placeholder="Write detailed spatial thoughts, links, #tags..."
             className="w-full px-3 py-2 text-xs rounded-xl glass-input resize-none leading-relaxed font-mono"
           />
         </div>
@@ -173,7 +184,7 @@ export const NodeModal = () => {
                 className="px-2.5 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-medium flex items-center gap-1.5"
               >
                 <Tag className="w-3 h-3" />
-                {tag}
+                #{tag}
                 <button
                   onClick={() => handleRemoveTag(tag)}
                   className="hover:text-rose-400 transition-colors"
@@ -188,9 +199,52 @@ export const NodeModal = () => {
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             onKeyDown={handleAddTag}
-            placeholder="Add tag (e.g. Architecture, Physics)..."
+            placeholder="Add tag (e.g. strategy, pwa)..."
             className="w-full px-3 py-1.5 text-xs rounded-xl glass-input"
           />
+        </div>
+
+        {/* Connections Management Section (Step 4) */}
+        <div className="pt-2 border-t border-white/10">
+          <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+            <Link2 className="w-3 h-3 text-purple-400" />
+            Active Manual Connections ({activeNodeLinks.length})
+          </label>
+
+          {activeNodeLinks.length === 0 ? (
+            <p className="text-[11px] text-slate-500 italic">No manual connections drawn yet. Drag the (+) anchor handle on a card to tether it.</p>
+          ) : (
+            <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+              {activeNodeLinks.map((link) => {
+                const otherNodeId = link.sourceId === node.id ? link.targetId : link.sourceId;
+                const otherNode = nodes[otherNodeId];
+
+                return (
+                  <div
+                    key={link.id}
+                    className="flex items-center justify-between gap-2 p-2 rounded-xl bg-white/5 border border-white/10 text-xs"
+                  >
+                    <div className="overflow-hidden">
+                      <span className="font-semibold text-cyan-300 truncate block">
+                        {otherNode ? otherNode.title : 'Connected Thought'}
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        {link.label || 'relates to'}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => deleteLink(link.id)}
+                      className="p-1 rounded hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors"
+                      title="Delete connection"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Footer Actions */}

@@ -1,16 +1,17 @@
 /**
- * Extracts hashtags from title and content string.
- * Example: "Building a #pwa with #vite" -> ["pwa", "vite"]
+ * Extracts clean hashtag strings from text using /(?:\s|^)#[A-Za-z0-9_]+/g
+ * Example: "Building a #pwa with #vite_app" -> ["pwa", "vite_app"]
  */
 export const extractHashtags = (text = '') => {
   if (!text) return [];
-  const regex = /#([a-zA-Z0-9_\-\u00C0-\u024F]+)/g;
+  const regex = /(?:\s|^)#[A-Za-z0-9_]+/g;
   const matches = [];
   let match;
   while ((match = regex.exec(text)) !== null) {
-    const tag = match[1].toLowerCase();
-    if (!matches.includes(tag)) {
-      matches.push(tag);
+    const rawTag = match[0].trim();
+    const cleanTag = rawTag.replace(/^#/, '').toLowerCase();
+    if (cleanTag && !matches.includes(cleanTag)) {
+      matches.push(cleanTag);
     }
   }
   return matches;
@@ -34,7 +35,9 @@ export const computeTagTethers = (nodesMap = {}) => {
 
     combinedTags.forEach((tag) => {
       if (!tagToNodes[tag]) tagToNodes[tag] = [];
-      tagToNodes[tag].push(node.id);
+      if (!tagToNodes[tag].includes(node.id)) {
+        tagToNodes[tag].push(node.id);
+      }
     });
   });
 
@@ -68,7 +71,6 @@ export const computeTagTethers = (nodesMap = {}) => {
   return tagTethers;
 };
 
-// Deterministic color palette picker for tags
 const TAG_COLORS = ['cyan', 'purple', 'emerald', 'amber', 'rose', 'indigo'];
 const getTagColor = (tag = '') => {
   let hash = 0;

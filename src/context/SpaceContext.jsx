@@ -22,7 +22,7 @@ const INITIAL_NODES = {
     width: 320,
     height: 200,
     color: 'cyan',
-    tags: ['Architecture', 'PWA', 'Vite'],
+    tags: ['pwa', 'vite', 'architecture'],
     pinned: true,
     createdAt: Date.now(),
     updatedAt: Date.now()
@@ -30,13 +30,13 @@ const INITIAL_NODES = {
   'node-2': {
     id: 'node-2',
     title: '🎨 HTML5 Canvas Engine',
-    content: '60FPS rendering pipeline featuring high-DPI scaling, elastic bezier tethers, & particle impulse streams. Built for #pwa.',
+    content: '60FPS rendering pipeline featuring high-DPI scaling, elastic bezier tethers, & Pythagorean gravity nexus. Built for #pwa.',
     x: 450,
     y: -120,
     width: 300,
     height: 190,
     color: 'purple',
-    tags: ['Canvas', 'Physics', 'PWA'],
+    tags: ['canvas', 'physics', 'pwa'],
     pinned: false,
     createdAt: Date.now(),
     updatedAt: Date.now()
@@ -50,7 +50,7 @@ const INITIAL_NODES = {
     width: 300,
     height: 190,
     color: 'emerald',
-    tags: ['Firebase', 'Firestore', 'Realtime'],
+    tags: ['firebase', 'firestore', 'realtime'],
     pinned: false,
     createdAt: Date.now(),
     updatedAt: Date.now()
@@ -64,7 +64,7 @@ const INITIAL_NODES = {
     width: 300,
     height: 180,
     color: 'amber',
-    tags: ['Offline', 'Manifest', 'PWA'],
+    tags: ['offline', 'manifest', 'pwa'],
     pinned: false,
     createdAt: Date.now(),
     updatedAt: Date.now()
@@ -78,10 +78,8 @@ const INITIAL_LINKS = [
 ];
 
 export const SpaceProvider = ({ children }) => {
-  // Auth User State
   const [currentUser, setCurrentUser] = useState(null);
 
-  // Spatial Data State
   const [nodes, setNodes] = useState(() => {
     const saved = localStorage.getItem('nebula_nodes');
     return saved ? JSON.parse(saved) : INITIAL_NODES;
@@ -92,13 +90,11 @@ export const SpaceProvider = ({ children }) => {
     return saved ? JSON.parse(saved) : INITIAL_LINKS;
   });
 
-  // Camera Matrix & Viewport State
   const [camera, setCamera] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 1.0 });
   const [selection, setSelection] = useState({ nodeIds: [], linkId: null });
   const [activeTool, setActiveTool] = useState('select');
   const [tetherDraft, setTetherDraft] = useState(null);
   
-  // UI & Modal States
   const [editingNodeId, setEditingNodeId] = useState(null);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -119,17 +115,15 @@ export const SpaceProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  // Compute Organic Auto #Tag Tethers
+  // Compute Tag Tethers
   const autoTagTethers = useMemo(() => {
     return computeTagTethers(nodes);
   }, [nodes]);
 
-  // Combine manual links with auto tag tethers
   const allCombinedLinks = useMemo(() => {
     return [...links, ...autoTagTethers];
   }, [links, autoTagTethers]);
 
-  // LocalStorage Cache
   useEffect(() => {
     try {
       localStorage.setItem('nebula_nodes', JSON.stringify(nodes));
@@ -139,7 +133,6 @@ export const SpaceProvider = ({ children }) => {
     }
   }, [nodes, links]);
 
-  // PWA Prompt Listener
   useEffect(() => {
     const handleBeforeInstall = (e) => {
       e.preventDefault();
@@ -157,7 +150,7 @@ export const SpaceProvider = ({ children }) => {
     };
   }, []);
 
-  // Realtime Firestore Sync
+  // Firestore Sync
   useEffect(() => {
     if (!db) {
       setSyncStatus('offline');
@@ -211,7 +204,6 @@ export const SpaceProvider = ({ children }) => {
     };
   }, [currentUser]);
 
-  // Sync Node to Cloud
   const syncNodeToCloud = useCallback((node, immediate = false) => {
     if (!db) return;
     setSyncStatus('syncing');
@@ -235,7 +227,6 @@ export const SpaceProvider = ({ children }) => {
     }
   }, [currentUser]);
 
-  // Sync Link to Cloud
   const syncLinkToCloud = useCallback((link) => {
     if (!db) return;
     setSyncStatus('syncing');
@@ -245,7 +236,6 @@ export const SpaceProvider = ({ children }) => {
       .catch(() => setSyncStatus('offline'));
   }, [currentUser]);
 
-  // Create Node Action
   const createNode = useCallback((worldX, worldY, title = 'New Thought', color = 'cyan', content = '') => {
     const id = `node-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const parsedTags = extractHashtags(title + ' ' + content);
@@ -259,7 +249,7 @@ export const SpaceProvider = ({ children }) => {
       width: 290,
       height: 180,
       color,
-      tags: parsedTags.length > 0 ? parsedTags : ['Idea'],
+      tags: parsedTags,
       pinned: false,
       createdAt: Date.now(),
       updatedAt: Date.now()
@@ -272,15 +262,13 @@ export const SpaceProvider = ({ children }) => {
     return id;
   }, [camera, syncNodeToCloud]);
 
-  // Update Node Action
   const updateNode = useCallback((id, updates, immediateSync = false) => {
     setNodes((prev) => {
       const existing = prev[id];
       if (!existing) return prev;
       const updated = { ...existing, ...updates, updatedAt: Date.now() };
       
-      // Auto-extract tags if content or title changed
-      if (updates.title || updates.content) {
+      if (updates.title !== undefined || updates.content !== undefined) {
         const text = (updated.title || '') + ' ' + (updated.content || '');
         const autoTags = extractHashtags(text);
         if (autoTags.length > 0) {
@@ -294,7 +282,6 @@ export const SpaceProvider = ({ children }) => {
     });
   }, [syncNodeToCloud]);
 
-  // Delete Node Action
   const deleteNode = useCallback((id) => {
     setNodes((prev) => {
       const next = { ...prev };
@@ -311,7 +298,6 @@ export const SpaceProvider = ({ children }) => {
     ambientAudio.playDeleteSound();
   }, [currentUser]);
 
-  // Create Link Action
   const createLink = useCallback((sourceId, targetId, label = 'relates to', color = 'cyan') => {
     if (sourceId === targetId) return;
     const existing = links.find((l) => (l.sourceId === sourceId && l.targetId === targetId) || (l.sourceId === targetId && l.targetId === sourceId));
@@ -324,7 +310,6 @@ export const SpaceProvider = ({ children }) => {
     ambientAudio.playTetherSound();
   }, [links, syncLinkToCloud]);
 
-  // Delete Link Action
   const deleteLink = useCallback((linkId) => {
     setLinks((prev) => prev.filter((l) => l.id !== linkId));
     setSelection((prev) => ({ ...prev, linkId: null }));
@@ -335,18 +320,20 @@ export const SpaceProvider = ({ children }) => {
     ambientAudio.playDeleteSound();
   }, [currentUser]);
 
-  // Cluster Orbit Constellations Auto-Layout Algorithm
+  // Step 5: Ignore pinned nodes in Auto-Layout algorithm
   const autoLayout = useCallback(() => {
-    const nodeKeys = Object.keys(nodes);
-    if (nodeKeys.length === 0) return;
+    const allNodeKeys = Object.keys(nodes);
+    // Unpinned nodes only
+    const unpinnedKeys = allNodeKeys.filter((k) => !nodes[k].pinned);
+
+    if (unpinnedKeys.length === 0) return;
 
     const updated = { ...nodes };
-    const radius = Math.max(380, nodeKeys.length * 95);
-    const angleStep = (2 * Math.PI) / nodeKeys.length;
+    const radius = Math.max(380, unpinnedKeys.length * 95);
+    const angleStep = (2 * Math.PI) / unpinnedKeys.length;
 
-    nodeKeys.forEach((key, index) => {
+    unpinnedKeys.forEach((key, index) => {
       const angle = index * angleStep;
-      // Add subtle orbital spiral offsets
       const orbitOffset = (index % 2 === 0 ? 1 : 0.85);
       updated[key] = {
         ...updated[key],
@@ -362,12 +349,10 @@ export const SpaceProvider = ({ children }) => {
     ambientAudio.playTetherSound();
   }, [nodes, syncNodeToCloud]);
 
-  // Reset Camera View
   const resetView = useCallback(() => {
     setCamera({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 1.0 });
   }, []);
 
-  // Fit View
   const fitView = useCallback(() => {
     const nodeArray = Object.values(nodes);
     if (nodeArray.length === 0) return resetView();
@@ -398,13 +383,11 @@ export const SpaceProvider = ({ children }) => {
     });
   }, [nodes, resetView]);
 
-  // Audio Toggle Action
   const toggleAmbientAudio = useCallback(() => {
     const active = ambientAudio.toggleAudio();
     setIsAudioActive(active);
   }, []);
 
-  // PWA Install Prompt
   const triggerPwaInstall = useCallback(() => {
     if (pwaPrompt) {
       pwaPrompt.prompt();
