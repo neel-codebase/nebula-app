@@ -9,12 +9,12 @@ import {
 } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyB0hAhKw05Etc6v6CV3As8BuETfyZC1PK8',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'nebula-glass.firebaseapp.com',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'nebula-glass',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'nebula-glass.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '903775894723',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:903775894723:web:1235640f0f7707875d7676',
 };
 
 let app = null;
