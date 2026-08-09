@@ -58,7 +58,6 @@ export const CanvasEngine = ({ onCanvasClick }) => {
   const animFrameRef = useRef(null);
   const particlesRef = useRef([]);
 
-  // Initialize 1200 Particles
   useEffect(() => {
     const particles = [];
     const count = 1000;
@@ -116,7 +115,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       ctx.save();
       ctx.scale(dpr, dpr);
 
-      // Background
+      // Deep space background
       ctx.fillStyle = '#030712';
       ctx.fillRect(0, 0, width, height);
 
@@ -125,7 +124,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       ctx.translate(camera.x, camera.y);
       ctx.scale(camera.zoom, camera.zoom);
 
-      // 1. Edge-to-Edge Dynamic Infinite Grid
+      // 1. Grid Background
       const gridSize = 80;
       const startX = Math.floor((-camera.x / camera.zoom) / gridSize) * gridSize - gridSize * 2;
       const endX = Math.ceil((width - camera.x) / camera.zoom / gridSize) * gridSize + gridSize * 2;
@@ -145,7 +144,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       }
       ctx.stroke();
 
-      // 2. Edge-to-Edge Infinite Pythagorean Gravity Nexus
+      // 2. Infinite Pythagorean Gravity Nexus
       const particles = particlesRef.current;
       const mouseWorld = mouseWorldRef.current;
       const cellSize = 160;
@@ -157,13 +156,11 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       const viewMaxY = (height - camera.y) / camera.zoom + 1000;
 
       particles.forEach((p) => {
-        // Wrap particles around viewport bounds for infinite edge-to-edge coverage
         if (p.x < viewMinX) p.x = viewMaxX;
         if (p.x > viewMaxX) p.x = viewMinX;
         if (p.y < viewMinY) p.y = viewMaxY;
         if (p.y > viewMaxY) p.y = viewMinY;
 
-        // Cursor gravity pull
         const dxMouse = mouseWorld.x - p.x;
         const dyMouse = mouseWorld.y - p.y;
         const distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
@@ -192,7 +189,6 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         gridBins[key].push(p);
       });
 
-      // Pythagorean Nexus Lines
       const processedPairs = new Set();
       ctx.lineWidth = 0.9 / camera.zoom;
 
@@ -230,7 +226,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         }
       });
 
-      // 3. Links & Tethers with Color Accents
+      // 3. Render Links & Tethers
       links.forEach((link) => {
         const sourceNode = nodes[link.sourceId];
         const targetNode = nodes[link.targetId];
@@ -268,7 +264,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         ctx.stroke();
         ctx.restore();
 
-        // Flowing Energy Impulse Dot
+        // Flowing Energy Pulse Dot
         const impulseCount = isAutoTag ? 1 : 2;
         for (let i = 0; i < impulseCount; i++) {
           const progress = ((time * (isAutoTag ? 0.4 : 0.6) + i / impulseCount) % 1);
@@ -409,7 +405,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
           const mx = (srcNode.x + tgtNode.x) / 2;
           const my = (srcNode.y + tgtNode.y) / 2;
           const dist = Math.sqrt((worldPos.x - mx) ** 2 + (worldPos.y - my) ** 2);
-          if (dist < 40) {
+          if (dist < 45) {
             clickedLink = link;
           }
         });
@@ -474,6 +470,32 @@ export const CanvasEngine = ({ onCanvasClick }) => {
     }
   };
 
+  const handleDoubleClick = (e) => {
+    if (e.target === canvasRef.current) {
+      const worldPos = screenToWorld(e.clientX, e.clientY);
+      let doubleClickedLink = null;
+
+      links.forEach((link) => {
+        const srcNode = nodes[link.sourceId];
+        const tgtNode = nodes[link.targetId];
+        if (!srcNode || !tgtNode) return;
+        const mx = (srcNode.x + tgtNode.x) / 2;
+        const my = (srcNode.y + tgtNode.y) / 2;
+        const dist = Math.sqrt((worldPos.x - mx) ** 2 + (worldPos.y - my) ** 2);
+        if (dist < 45) {
+          doubleClickedLink = link;
+        }
+      });
+
+      if (doubleClickedLink && !doubleClickedLink.isAutoTag) {
+        const newLabel = prompt('Rename Connection Tether:', doubleClickedLink.label || 'connects to');
+        if (newLabel !== null) {
+          updateLink(doubleClickedLink.id, { label: newLabel.trim() || 'connects to' });
+        }
+      }
+    }
+  };
+
   return (
     <canvas
       ref={canvasRef}
@@ -481,6 +503,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onDoubleClick={handleDoubleClick}
       onContextMenu={(e) => e.preventDefault()}
       className={`absolute inset-0 block w-full h-full touch-none ${
         activeTool === 'pan' || isPanningRef.current ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'

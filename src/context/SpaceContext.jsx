@@ -15,56 +15,42 @@ const SpaceContext = createContext(null);
 const INITIAL_NODES = {
   'node-1': {
     id: 'node-1',
-    title: '# 🌌 Nebula Architecture',
-    content: 'Cloud-synced infinite spatial canvas engineered for high-leveraged thought management.\n\n## Core Features\n- Includes **#pwa** and **#vite**.\n- Visit [Documentation](https://nebula-app-kappa.vercel.app)',
-    x: 0,
-    y: 0,
-    width: 320,
+    title: '🌌 Welcome to Nebula',
+    content: 'Cloud-synced infinite spatial workspace for strategic thought mapping.\n\n- [x] Drag cards around the canvas\n- [ ] Add #tags like #canvas to auto-tether notes\n- [ ] Drag (+) handles to draw custom tethers',
+    x: -240,
+    y: -20,
+    width: 330,
     height: 220,
     color: 'cyan',
-    tags: ['pwa', 'vite', 'architecture'],
+    tags: ['welcome', 'canvas'],
     pinned: true,
     createdAt: Date.now(),
     updatedAt: Date.now()
   },
   'node-2': {
     id: 'node-2',
-    title: '🎨 HTML5 Canvas Engine',
-    content: '60FPS rendering pipeline featuring ==high-DPI scaling==, elastic bezier tethers, & Pythagorean gravity nexus. Built for #pwa.',
-    x: 450,
-    y: -120,
-    width: 300,
-    height: 200,
+    title: '🔗 Tethering System',
+    content: 'Drag from any **(+) anchor handle** on a card edge to draw glowing connection tethers.\n\n- Double-click tethers to rename\n- Click tethers to choose accent colors',
+    x: 220,
+    y: -130,
+    width: 310,
+    height: 210,
     color: 'purple',
-    tags: ['canvas', 'physics', 'pwa'],
+    tags: ['tether', 'canvas'],
     pinned: false,
     createdAt: Date.now(),
     updatedAt: Date.now()
   },
   'node-3': {
     id: 'node-3',
-    title: '🔥 Live Firestore Sync',
-    content: 'Optimistic local updates with debounced cloud persistence and multi-device realtime syncing with #firebase.',
-    x: 450,
-    y: 150,
-    width: 300,
-    height: 190,
-    color: 'emerald',
-    tags: ['firebase', 'firestore', 'realtime'],
-    pinned: false,
-    createdAt: Date.now(),
-    updatedAt: Date.now()
-  },
-  'node-4': {
-    id: 'node-4',
-    title: '⚡ Progressive Web App',
-    content: 'Offline-first service worker precaching, native install prompt, and zero-latency responsiveness for #pwa.',
-    x: -420,
-    y: 50,
-    width: 300,
+    title: '🏷️ Organic #Tags',
+    content: 'Add matching hashtags like #canvas to automatically generate glowing dotted tethers across space.',
+    x: 220,
+    y: 130,
+    width: 310,
     height: 180,
-    color: 'amber',
-    tags: ['offline', 'manifest', 'pwa'],
+    color: 'emerald',
+    tags: ['tags', 'canvas'],
     pinned: false,
     createdAt: Date.now(),
     updatedAt: Date.now()
@@ -72,9 +58,8 @@ const INITIAL_NODES = {
 };
 
 const INITIAL_LINKS = [
-  { id: 'link-1', sourceId: 'node-1', targetId: 'node-2', label: 'Renders via', color: 'purple' },
-  { id: 'link-2', sourceId: 'node-1', targetId: 'node-3', label: 'Persists to', color: 'emerald' },
-  { id: 'link-3', sourceId: 'node-4', targetId: 'node-1', label: 'Powers', color: 'amber' }
+  { id: 'link-1', sourceId: 'node-1', targetId: 'node-2', label: 'connects to', color: 'purple' },
+  { id: 'link-2', sourceId: 'node-1', targetId: 'node-3', label: 'shares #canvas', color: 'emerald' }
 ];
 
 export const SpaceProvider = ({ children }) => {
@@ -82,15 +67,27 @@ export const SpaceProvider = ({ children }) => {
 
   const [nodes, setNodes] = useState(() => {
     const saved = localStorage.getItem('nebula_nodes');
-    return saved ? JSON.parse(saved) : INITIAL_NODES;
+    if (!saved) return INITIAL_NODES;
+    try {
+      const parsed = JSON.parse(saved);
+      return Object.keys(parsed).length > 0 ? parsed : INITIAL_NODES;
+    } catch (e) {
+      return INITIAL_NODES;
+    }
   });
 
   const [links, setLinks] = useState(() => {
     const saved = localStorage.getItem('nebula_links');
-    return saved ? JSON.parse(saved) : INITIAL_LINKS;
+    if (!saved) return INITIAL_LINKS;
+    try {
+      const parsed = JSON.parse(saved);
+      return parsed.length > 0 ? parsed : INITIAL_LINKS;
+    } catch (e) {
+      return INITIAL_LINKS;
+    }
   });
 
-  const [camera, setCamera] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 1.0 });
+  const [camera, setCamera] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 0.95 });
   const [selection, setSelection] = useState({ nodeIds: [], linkId: null });
   const [activeTool, setActiveTool] = useState('select');
   const [tetherDraft, setTetherDraft] = useState(null);
@@ -114,7 +111,6 @@ export const SpaceProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  // Compute Tag Tethers
   const autoTagTethers = useMemo(() => {
     return computeTagTethers(nodes);
   }, [nodes]);
@@ -281,7 +277,6 @@ export const SpaceProvider = ({ children }) => {
     });
   }, [syncNodeToCloud]);
 
-  // Group Node Movement
   const moveNodes = useCallback((nodeIds = [], deltaX = 0, deltaY = 0) => {
     setNodes((prev) => {
       const next = { ...prev };
@@ -317,7 +312,7 @@ export const SpaceProvider = ({ children }) => {
     ambientAudio.playDeleteSound();
   }, [currentUser]);
 
-  const createLink = useCallback((sourceId, targetId, label = 'relates to', color = 'cyan') => {
+  const createLink = useCallback((sourceId, targetId, label = 'connects to', color = 'cyan') => {
     if (sourceId === targetId) return;
     const existing = links.find((l) => (l.sourceId === sourceId && l.targetId === targetId) || (l.sourceId === targetId && l.targetId === sourceId));
     if (existing) return;
@@ -380,7 +375,7 @@ export const SpaceProvider = ({ children }) => {
   }, [nodes, syncNodeToCloud]);
 
   const resetView = useCallback(() => {
-    setCamera({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 1.0 });
+    setCamera({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 0.95 });
   }, []);
 
   const fitView = useCallback(() => {

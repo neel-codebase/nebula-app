@@ -88,18 +88,26 @@ export const ThoughtNodeOverlay = () => {
     }
   };
 
+  // Robust Pointer Capture Card Resizing
   const startResize = (e, node) => {
     e.stopPropagation();
     e.preventDefault();
 
-    const startWidth = node.width;
-    const startHeight = node.height;
-    const startX = e.clientX;
-    const startY = e.clientY;
+    const targetElem = e.currentTarget;
+    try {
+      targetElem.setPointerCapture(e.pointerId);
+    } catch (err) {
+      // Fallback if setPointerCapture is unsupported
+    }
 
-    const handleResizeMove = (moveEvt) => {
-      const deltaScreenX = moveEvt.clientX - startX;
-      const deltaScreenY = moveEvt.clientY - startY;
+    const startWidth = node.width || 300;
+    const startHeight = node.height || 200;
+    const startScreenX = e.clientX;
+    const startScreenY = e.clientY;
+
+    const handleResizePointerMove = (moveEvt) => {
+      const deltaScreenX = moveEvt.clientX - startScreenX;
+      const deltaScreenY = moveEvt.clientY - startScreenY;
 
       const newWidth = Math.max(220, startWidth + deltaScreenX / camera.zoom);
       const newHeight = Math.max(140, startHeight + deltaScreenY / camera.zoom);
@@ -107,15 +115,19 @@ export const ThoughtNodeOverlay = () => {
       updateNode(node.id, { width: newWidth, height: newHeight });
     };
 
-    const handleResizeUp = () => {
-      window.removeEventListener('pointermove', handleResizeMove);
-      window.removeEventListener('pointerup', handleResizeUp);
+    const handleResizePointerUp = (upEvt) => {
+      try {
+        targetElem.releasePointerCapture(upEvt.pointerId);
+      } catch (err) {}
+      window.removeEventListener('pointermove', handleResizePointerMove);
+      window.removeEventListener('pointerup', handleResizePointerUp);
     };
 
-    window.addEventListener('pointermove', handleResizeMove);
-    window.addEventListener('pointerup', handleResizeUp);
+    window.addEventListener('pointermove', handleResizePointerMove);
+    window.addEventListener('pointerup', handleResizePointerUp);
   };
 
+  // Multi-Anchor Tether Handle Drag
   const startTetherDraft = (e, sourceNodeId) => {
     e.stopPropagation();
     e.preventDefault();
@@ -152,10 +164,10 @@ export const ThoughtNodeOverlay = () => {
       const targetNode = Object.values(nodes).find((n) => {
         return (
           n.id !== sourceNodeId &&
-          dropWorldX >= n.x - 30 &&
-          dropWorldX <= n.x + n.width + 30 &&
-          dropWorldY >= n.y - 30 &&
-          dropWorldY <= n.y + n.height + 30
+          dropWorldX >= n.x - 35 &&
+          dropWorldX <= n.x + n.width + 35 &&
+          dropWorldY >= n.y - 35 &&
+          dropWorldY <= n.y + n.height + 35
         );
       });
 
@@ -189,7 +201,7 @@ export const ThoughtNodeOverlay = () => {
           return null;
         }
 
-        // Compact Collapsed Pill Card on Zoom Out (< 0.45x)
+        // Compact Collapsed Card on Zoom Out (< 0.45x)
         if (isZoomedOut) {
           return (
             <div
@@ -240,25 +252,53 @@ export const ThoughtNodeOverlay = () => {
               isSelected ? 'ring-2 ring-cyan-400 shadow-2xl scale-[1.01]' : 'hover:scale-[1.005]'
             }`}
           >
-            {/* Tether Anchor Handle Button */}
+            {/* Multi-Anchor Tether Creation Buttons on 4 Card Edges */}
+            {/* Right Anchor */}
             <button
               onPointerDown={(e) => startTetherDraft(e, node.id)}
-              className="absolute -right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-2 border-slate-900 shadow-glow-cyan flex items-center justify-center opacity-80 hover:opacity-100 hover:scale-125 transition-all z-20 cursor-crosshair"
-              title="Drag to tether to another card"
+              className="absolute -right-3.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-2 border-slate-900 shadow-glow-cyan flex items-center justify-center opacity-70 group-hover:opacity-100 hover:scale-125 transition-all z-20 cursor-crosshair"
+              title="Drag to tether node"
             >
               <Plus className="w-4 h-4" />
             </button>
 
-            {/* Bottom-Right Corner Resize Handle */}
+            {/* Left Anchor */}
+            <button
+              onPointerDown={(e) => startTetherDraft(e, node.id)}
+              className="absolute -left-3.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-gradient-to-r from-purple-600 to-cyan-500 text-white border-2 border-slate-900 shadow-glow-cyan flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-125 transition-all z-20 cursor-crosshair"
+              title="Drag to tether node"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+
+            {/* Top Anchor */}
+            <button
+              onPointerDown={(e) => startTetherDraft(e, node.id)}
+              className="absolute left-1/2 -translate-x-1/2 -top-3.5 w-7 h-7 rounded-full bg-gradient-to-r from-cyan-500 to-emerald-500 text-white border-2 border-slate-900 shadow-glow-cyan flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-125 transition-all z-20 cursor-crosshair"
+              title="Drag to tether node"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+
+            {/* Bottom Anchor */}
+            <button
+              onPointerDown={(e) => startTetherDraft(e, node.id)}
+              className="absolute left-1/2 -translate-x-1/2 -bottom-3.5 w-7 h-7 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white border-2 border-slate-900 shadow-glow-cyan flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-125 transition-all z-20 cursor-crosshair"
+              title="Drag to tether node"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+
+            {/* Bottom-Right Corner Pointer-Captured Resize Handle */}
             <div
               onPointerDown={(e) => startResize(e, node)}
-              className="absolute right-1 bottom-1 p-1 text-slate-400 hover:text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-se-resize z-20"
-              title="Drag to resize card"
+              className="absolute right-1 bottom-1 p-1 text-slate-400 hover:text-cyan-400 opacity-60 group-hover:opacity-100 transition-opacity cursor-se-resize z-20 bg-slate-900/60 rounded-tl-lg border-l border-t border-white/10"
+              title="Drag bottom-right corner to resize card"
             >
               <Scaling className="w-3.5 h-3.5" />
             </div>
 
-            {/* Top Card Controls Header */}
+            {/* Top Card Header */}
             <div className="flex items-center justify-between gap-2 border-b border-white/5 pb-2.5 mb-2">
               <div className="flex items-center gap-2 overflow-hidden">
                 <GripHorizontal className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 transition-opacity cursor-grab text-slate-400 flex-shrink-0" />
@@ -311,7 +351,7 @@ export const ThoughtNodeOverlay = () => {
               </div>
             </div>
 
-            {/* Card Body with Rich Text Formatting & Interactive Task Checkboxes */}
+            {/* Card Body Content */}
             <div className="mb-3 overflow-hidden text-xs">
               <FormattedText
                 text={node.content}
