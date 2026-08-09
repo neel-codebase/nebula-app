@@ -55,10 +55,10 @@ export const CanvasEngine = ({ onCanvasClick }) => {
   const animFrameRef = useRef(null);
   const particlesRef = useRef([]);
 
-  // Initialize 1500 Pythagorean Gravity Nexus Particles (15X Density!)
+  // Initialize 1200-particle Pythagorean Gravity Nexus
   useEffect(() => {
     const particles = [];
-    const count = 1200; // High-density celestial particle matrix
+    const count = 1000;
     for (let i = 0; i < count; i++) {
       particles.push({
         id: i,
@@ -80,7 +80,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
     };
   }, [camera]);
 
-  // Main Canvas Render Loop (60FPS Spatial Engine)
+  // Main Canvas Render Loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -132,19 +132,17 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       }
       ctx.stroke();
 
-      // 2. High-Performance Spatial Grid Binned Pythagorean Gravity Nexus
+      // 2. High-Performance Spatial Binned Pythagorean Gravity Nexus
       const particles = particlesRef.current;
       const mouseWorld = mouseWorldRef.current;
       const cellSize = 160;
       const gridBins = {};
 
-      // Visible viewport bounds in world coordinates
       const viewMinX = -camera.x / camera.zoom - 200;
       const viewMaxX = (width - camera.x) / camera.zoom + 200;
       const viewMinY = -camera.y / camera.zoom - 200;
       const viewMaxY = (height - camera.y) / camera.zoom + 200;
 
-      // Update positions and place visible particles into spatial grid bins
       particles.forEach((p) => {
         // Cursor gravitational pull
         const dxMouse = mouseWorld.x - p.x;
@@ -163,14 +161,12 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         p.x += p.vx;
         p.y += p.vy;
 
-        // Render particle dot if within viewport
         if (p.x >= viewMinX && p.x <= viewMaxX && p.y >= viewMinY && p.y <= viewMaxY) {
           ctx.fillStyle = `rgba(6, 182, 212, ${p.alpha})`;
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.radius / Math.max(camera.zoom, 0.4), 0, Math.PI * 2);
           ctx.fill();
 
-          // Spatial Bin Key
           const cx = Math.floor(p.x / cellSize);
           const cy = Math.floor(p.y / cellSize);
           const key = `${cx}:${cy}`;
@@ -187,7 +183,6 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         const [cx, cy] = key.split(':').map(Number);
         const currentCellParticles = gridBins[key];
 
-        // Check current cell and neighboring 8 cells
         for (let nx = cx - 1; nx <= cx + 1; nx++) {
           for (let ny = cy - 1; ny <= cy + 1; ny++) {
             const neighborParticles = gridBins[`${nx}:${ny}`];
@@ -388,7 +383,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
     }
   };
 
-  const handleMouseUp = (e) => {
+  const handleMouseUp = () => {
     if (isPanningRef.current) isPanningRef.current = false;
   };
 
