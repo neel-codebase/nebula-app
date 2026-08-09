@@ -1,100 +1,86 @@
-# 🌌 Nebula v3.0 — The Spatial Intelligence Engine
+# 🪐 NEBULA V4 — Cloud-Synced Spatial Intelligence Engine
 
-**Nebula** is a cloud-synced, 60FPS infinite spatial workspace engineered for high-value thought mapping, system architecture, and strategic planning. Designed for solo operators and strategic leaders who need more than 1-dimensional vertical documents, Nebula releases thoughts into an unbound 2D spatial canvas with organic tag tethering, custom canvas physics, interactive task lists, and deep focus audio soundscapes.
-
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-v3.0--official-purple.svg)
-![PWA](https://img.shields.io/badge/PWA-Ready-emerald.svg)
+> **Welcome to Nebula V4**. Experience your thoughts non-linearly on an infinite 60FPS spatial canvas governed by celestial star gravity, organic hashtag tethers, multi-galaxy map isolation, and harmonic 432Hz ambient focus audio.
 
 ---
 
-## 🌐 Official Production Application
+## ✨ What's New in V4
 
-Access the official production release of Nebula:
-
-👉 **[https://nebula-app-kappa.vercel.app](https://nebula-app-kappa.vercel.app)**
-
----
-
-## 🌟 Master Features (v3.0 Release)
-
-### 🌌 Unbound Spatial Canvas & Physics
-- **60FPS Infinite Viewport**: Exponential camera zoom (`0.15x` to `4.5x`) and translation with smooth dpr Retina scaling.
-- **Pythagorean Gravity Nexus**: 1,000+ floating celestial particles connected into geometric triangle networks reacting to real-time cursor gravity.
-- **Infinite Edge-to-Edge Wrapping**: Dynamic particle projection wrapping guarantees 100% viewport coverage across the entire canvas with zero gaps at any zoom level.
-- **Cluster Orbit Constellations**: Physics auto-layout clustering scattered cards into circular orbital constellations grouped around primary hubs.
-
-### 🔗 Tethering & Associations Engine
-- **Multi-Anchor Drag Tethering**: Drag from any card's 4 perimeter anchor handles (`+`) to draw glowing cubic Bezier connection tethers.
-- **Organic #Tag Tethers**: Automatic detection of matching `#hashtags` generating glowing dotted tethers with tag badge pills.
-- **Notion-Style WYSIWYG Tether Editor**: Click any tether line on the canvas to open a floating editor popover bar for live text label editing, color swatch selection (Cyan, Purple, Emerald, Amber, Rose, Indigo), and deletion.
-- **Inline Double-Click Renaming**: Double-click any tether line or pill on the canvas for instant label renaming.
-
-### 📝 Rich Text Formatting & Interactive Task Lists
-- **Interactive Checkboxes**: Create `- [ ] Task item` or `- [x] Completed item` lists. Click checkboxes directly on thought cards to toggle completion states live!
-- **Bullet Lists**: Bullet items (`- Item` or `* Item`) with glowing cyan accent dots.
-- **Headings & Inline Formatting**: H1 (`# Title`), H2 (`## Subtitle`), **Bold**, *Italic*, ~~Strikethrough~~, <u>Underline</u>, <mark>Highlight</mark>, and `[clickable hyperlinks](url)`.
-
-### 🎧 Deep Focus Atmosphere & Cloud Sync
-- **Procedural 432Hz Ambient Focus Synthesizer**: Built-in Web Audio API synthesizer producing sub-bass focus drones and soft pink noise waves.
-- **Firebase Firestore Live Sync**: Bidirectional real-time persistence (`onSnapshot`) with debounced position write-backs.
-- **Offline PWA Service Worker**: Precached static assets and Workbox service worker.
+- 🌌 **Landing-Page First Showcase**: Always opens directly to an interactive landing showcase illustrating the **Tag & Tether mechanism** and star particle gravity before entering your workspace.
+- 💫 **Pythagorean Gravity & Star Nebula Physics**: A 1,000-particle celestial star dust nexus with cursor gravity wells, subtle orbital node math, and deep space nebula backdrops.
+- 🏷️ **Organic Tag & Tether System**: Simply type matching `#hashtags` (like `#strategy` or `#canvas`) across any cards, and Nebula automatically constructs glowing bezier tethers between your thoughts.
+- 🪐 **Multi-Galaxy Maps in Left Rail**: Keep distinct project nodes isolated in dedicated Galaxy Maps. Click **"+ New Galaxy Map"** in the left rail to spawn fresh blank spatial workspaces at any time.
+- 💻 **Chrome Extension & Desktop App**: Install Nebula V4 directly into Google Chrome as a Manifest V3 Extension or desktop PWA for instant access anytime.
+- 🎧 **432Hz Ambient Focus Synthesizer**: Procedural Web Audio API soundscape generating harmonic focus waves tailored for deep work.
+- 🛡️ **Offline-First Cloud Sync**: Realtime Firestore synchronization paired with instant local storage persistence so your maps remain accessible anywhere.
 
 ---
 
-## 🛠️ Tech Stack
+## 🚀 Quick Start Guide
 
-- **Build Environment**: [Vite](https://vitejs.dev/)
-- **Frontend Architecture**: [React 18](https://reactjs.org/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **Graphics Pipeline**: HTML5 Canvas API (Spatial Grid Binned 60FPS Render Pipeline)
-- **Backend Infrastructure**: Firebase Firestore & Auth
-- **PWA Integration**: `vite-plugin-pwa` with Workbox Service Worker
-- **Deployment Platform**: Vercel
+### 1. Launching Locally
+
+```bash
+# Clone the repository
+git clone https://github.com/your-username/nebula-app.git
+
+# Navigate into the project folder
+cd nebula-app
+
+# Install dependencies
+npm install
+
+# Start local development server
+npm run dev
+```
+
+Open your browser at `http://localhost:5173`. You will land directly on the visual landing page showcasing the Tag & Tether mechanism. Click **Enter Workspace** to start creating spatial thoughts.
 
 ---
 
-## 🚀 Getting Started
+## 🎨 Spatial Navigation & Controls
 
-### Installation
+| Action | Control Shortcut |
+| :--- | :--- |
+| **Pan Canvas** | Hold `Spacebar` + Drag, or `Middle Click` Drag |
+| **Zoom In / Out** | Mouse Wheel / Trackpad Pinch |
+| **Create Thought Card** | Double-Click anywhere on canvas, or press `N` |
+| **Draw Custom Tether** | Drag from any **(+) handle** on a card edge to another card |
+| **Auto-Tether Notes** | Type matching `#hashtags` inside two or more cards |
+| **Command Palette** | Press `Cmd + K` (macOS) or `Ctrl + K` (Windows) |
+| **Switch Galaxy Maps** | Open left rail sidebar (`Option + S`) and click any Galaxy Map |
+| **New Blank Galaxy Map** | Click **"+ New Galaxy Map"** in the left rail |
 
-1. **Clone the repository**:
+---
+
+## 🌐 Chrome Extension Installation
+
+1. Click **Chrome App** in the top navigation bar or landing page.
+2. Click **Download Chrome Package**.
+3. Open `chrome://extensions` in Google Chrome.
+4. Toggle **Developer mode** in the top-right corner.
+5. Click **Load unpacked** and select the extension directory.
+
+---
+
+## 🔒 Security & Environment Setup
+
+Nebula V4 operates in **Local Offline Mode** out of the box using browser storage. To enable optional cloud synchronization via Firebase:
+
+1. Copy `.env.example` to `.env.local`:
    ```bash
-   git clone https://github.com/neel-codebase/nebula-workspace.git
-   cd nebula-workspace
+   cp .env.example .env.local
    ```
-
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-3. **Configure Environment Variables**:
-   Copy `.env.example` to `.env` and fill in your Firebase credentials:
-   ```bash
-   cp .env.example .env
-   ```
-
-4. **Run Local Development Server**:
-   ```bash
-   npm run dev
-   ```
-
-5. **Build for Production**:
-   ```bash
-   npm run build
+2. Enter your Firebase configuration keys in `.env.local`:
+   ```ini
+   VITE_FIREBASE_API_KEY=your_firebase_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   VITE_FIREBASE_PROJECT_ID=your_project_id
+   VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
    ```
 
 ---
 
-## 🔒 Security & Git Hygiene
-
-- `.env` secret keys are kept strictly offline and listed in `.gitignore`.
-- Heavy build outputs (`dist/`, `node_modules/`) and Vercel cache (`.vercel/`) are ignored.
-- `.env.example` serves as the safe template for environment variables.
-
----
-
-## 📄 License
-
-Distributed under the MIT License.
+<p center>
+  <sub>Built with ❤️ for thinkers, architects, and visual spatial mappers.</sub>
+</p>

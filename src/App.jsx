@@ -1,4 +1,4 @@
-import React, { useState, Component } from 'react';
+import React, { Component } from 'react';
 import { SpaceProvider, useSpace } from './context/SpaceContext';
 import { CanvasEngine } from './components/canvas/CanvasEngine';
 import { ThoughtNodeOverlay } from './components/ui/ThoughtNodeOverlay';
@@ -11,6 +11,7 @@ import { Minimap } from './components/ui/Minimap';
 import { FileDropZone } from './components/ui/FileDropZone';
 import { LandingPage } from './components/landing/LandingPage';
 import { TetherEditorPopover } from './components/ui/TetherEditorPopover';
+import { ChromeAppModal } from './components/ui/ChromeAppModal';
 import { RefreshCw, Sparkles } from 'lucide-react';
 
 class ErrorBoundary extends Component {
@@ -29,6 +30,8 @@ class ErrorBoundary extends Component {
 
   handleReset = () => {
     try {
+      localStorage.removeItem('nebula_galaxy_maps');
+      localStorage.removeItem('nebula_active_galaxy_id');
       localStorage.removeItem('nebula_nodes');
       localStorage.removeItem('nebula_links');
     } catch (e) {}
@@ -63,8 +66,7 @@ class ErrorBoundary extends Component {
 }
 
 const SpaceViewport = () => {
-  const { setSelection } = useSpace();
-  const [showLanding, setShowLanding] = useState(false);
+  const { setSelection, showLanding, setShowLanding, isChromeModalOpen } = useSpace();
 
   const handleCanvasClick = () => {
     setSelection({ nodeIds: [], linkId: null });
@@ -100,7 +102,10 @@ const SpaceViewport = () => {
         {/* Detailed Thought Editor Modal */}
         <NodeModal />
 
-        {/* Introductory Landing Page Showcase */}
+        {/* Chrome App / Extension Download Modal */}
+        {isChromeModalOpen && <ChromeAppModal />}
+
+        {/* Introductory Landing Page Showcase (First Landing Default) */}
         {showLanding && <LandingPage onClose={() => setShowLanding(false)} />}
       </div>
     </FileDropZone>

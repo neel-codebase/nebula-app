@@ -115,8 +115,12 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       ctx.save();
       ctx.scale(dpr, dpr);
 
-      // Deep space background
-      ctx.fillStyle = '#030712';
+      // Deep space background with cosmic radial nebula glow
+      const bgGradient = ctx.createRadialGradient(width / 2, height / 2, 100, width / 2, height / 2, Math.max(width, height));
+      bgGradient.addColorStop(0, '#090d1f');
+      bgGradient.addColorStop(0.5, '#040714');
+      bgGradient.addColorStop(1, '#02040a');
+      ctx.fillStyle = bgGradient;
       ctx.fillRect(0, 0, width, height);
 
       // Viewport matrix
@@ -177,7 +181,8 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         p.x += p.vx;
         p.y += p.vy;
 
-        ctx.fillStyle = `rgba(6, 182, 212, ${p.alpha})`;
+        const colorHue = (p.id % 3 === 0) ? '6, 182, 212' : (p.id % 3 === 1) ? '168, 85, 247' : '16, 185, 129';
+        ctx.fillStyle = `rgba(${colorHue}, ${p.alpha})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius / Math.max(camera.zoom, 0.4), 0, Math.PI * 2);
         ctx.fill();

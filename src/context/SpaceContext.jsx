@@ -15,28 +15,28 @@ const SpaceContext = createContext(null);
 const INITIAL_NODES = {
   'node-1': {
     id: 'node-1',
-    title: '🌌 Welcome to Nebula v3.0',
-    content: 'Cloud-synced infinite spatial workspace for strategic thought mapping.\n\n- [x] Drag cards around the canvas\n- [ ] Add #tags like #canvas to auto-tether notes\n- [ ] Drag (+) handles to draw custom tethers',
+    title: '🌌 Welcome to Nebula v4.0',
+    content: 'Cloud-synced infinite spatial workspace with multi-galaxy maps & star gravity.\n\n- [x] Drag cards around the spatial nexus\n- [ ] Add #tags like #spatial to auto-tether notes\n- [ ] Switch or create blank Galaxy Maps in left rail',
     x: -240,
     y: -20,
     width: 330,
     height: 220,
     color: 'cyan',
-    tags: ['welcome', 'canvas'],
+    tags: ['welcome', 'spatial'],
     pinned: true,
     createdAt: Date.now(),
     updatedAt: Date.now()
   },
   'node-2': {
     id: 'node-2',
-    title: '🔗 Tethering System',
-    content: 'Drag from any **(+) anchor handle** on a card edge to draw glowing connection tethers.\n\n- Double-click tethers to rename\n- Click tethers to choose accent colors',
+    title: '🔗 Tag & Tether System',
+    content: 'Drag from any **(+) anchor handle** to draw connection tethers.\n\n- Double-click tethers to rename\n- Click tethers to choose accent colors',
     x: 220,
     y: -130,
     width: 310,
     height: 210,
     color: 'purple',
-    tags: ['tether', 'canvas'],
+    tags: ['tether', 'spatial'],
     pinned: false,
     createdAt: Date.now(),
     updatedAt: Date.now()
@@ -44,13 +44,13 @@ const INITIAL_NODES = {
   'node-3': {
     id: 'node-3',
     title: '🏷️ Organic #Tags',
-    content: 'Add matching hashtags like #canvas to automatically generate glowing dotted tethers across space.',
+    content: 'Add matching hashtags like #spatial to automatically generate glowing dotted tethers across space.',
     x: 220,
     y: 130,
     width: 310,
     height: 180,
     color: 'emerald',
-    tags: ['tags', 'canvas'],
+    tags: ['tags', 'spatial'],
     pinned: false,
     createdAt: Date.now(),
     updatedAt: Date.now()
@@ -59,41 +59,66 @@ const INITIAL_NODES = {
 
 const INITIAL_LINKS = [
   { id: 'link-1', sourceId: 'node-1', targetId: 'node-2', label: 'connects to', color: 'purple' },
-  { id: 'link-2', sourceId: 'node-1', targetId: 'node-3', label: 'shares #canvas', color: 'emerald' }
+  { id: 'link-2', sourceId: 'node-1', targetId: 'node-3', label: 'shares #spatial', color: 'emerald' }
 ];
 
-const getSafeInitialNodes = () => {
+const DEFAULT_GALAXY_ID = 'galaxy-main';
+
+const getInitialGalaxyMaps = () => {
   try {
-    const saved = localStorage.getItem('nebula_nodes');
+    const saved = localStorage.getItem('nebula_galaxy_maps');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && Object.keys(parsed).length > 0) {
+      if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
         return parsed;
       }
     }
   } catch (e) {
-    console.warn('LocalStorage nodes parse error, using fallback:', e);
+    console.warn('Galaxy maps parse error, using default:', e);
   }
-  return INITIAL_NODES;
+  return {
+    [DEFAULT_GALAXY_ID]: {
+      id: DEFAULT_GALAXY_ID,
+      name: 'Milky Way Galaxy',
+      nodes: INITIAL_NODES,
+      links: INITIAL_LINKS,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    }
+  };
 };
 
-const getSafeInitialLinks = () => {
+const getInitialActiveGalaxyId = (maps) => {
   try {
-    const saved = localStorage.getItem('nebula_links');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (e) {
-    console.warn('LocalStorage links parse error, using fallback:', e);
-  }
-  return INITIAL_LINKS;
+    const saved = localStorage.getItem('nebula_active_galaxy_id');
+    if (saved && maps[saved]) return saved;
+  } catch (e) {}
+  return Object.keys(maps)[0] || DEFAULT_GALAXY_ID;
 };
 
 export const SpaceProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
-  const [nodes, setNodes] = useState(getSafeInitialNodes);
-  const [links, setLinks] = useState(getSafeInitialLinks);
+  
+  // Galaxy Maps State
+  const [galaxyMaps, setGalaxyMaps] = useState(getInitialGalaxyMaps);
+  const [activeGalaxyId, setActiveGalaxyId] = useState(() => getInitialActiveGalaxyId(getInitialGalaxyMaps()));
+
+  // Active Map Nodes & Links
+  const [nodes, setNodes] = useState(() => {
+    const maps = getInitialGalaxyMaps();
+    const activeId = getInitialActiveGalaxyId(maps);
+    return maps[activeId]?.nodes || INITIAL_NODES;
+  });
+
+  const [links, setLinks] = useState(() => {
+    const maps = getInitialGalaxyMaps();
+    const activeId = getInitialActiveGalaxyId(maps);
+    return maps[activeId]?.links || INITIAL_LINKS;
+  });
+
+  // Default Landing Page state: TRUE on page load as requested by user!
+  const [showLanding, setShowLanding] = useState(true);
+  const [isChromeModalOpen, setIsChromeModalOpen] = useState(false);
 
   const [camera, setCamera] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 0.95 });
   const [selection, setSelection] = useState({ nodeIds: [], linkId: null });
@@ -128,18 +153,29 @@ export const SpaceProvider = ({ children }) => {
     return [...(links || []), ...(autoTagTethers || [])];
   }, [links, autoTagTethers]);
 
+  // Persist current active nodes & links into active galaxy map & localStorage
   useEffect(() => {
     try {
-      if (nodes && typeof nodes === 'object') {
-        localStorage.setItem('nebula_nodes', JSON.stringify(nodes));
-      }
-      if (links && Array.isArray(links)) {
-        localStorage.setItem('nebula_links', JSON.stringify(links));
-      }
+      setGalaxyMaps((prevMaps) => {
+        const currentActiveMap = prevMaps[activeGalaxyId];
+        if (currentActiveMap) {
+          const updatedActiveMap = {
+            ...currentActiveMap,
+            nodes,
+            links,
+            updatedAt: Date.now()
+          };
+          const nextMaps = { ...prevMaps, [activeGalaxyId]: updatedActiveMap };
+          localStorage.setItem('nebula_galaxy_maps', JSON.stringify(nextMaps));
+          return nextMaps;
+        }
+        return prevMaps;
+      });
+      localStorage.setItem('nebula_active_galaxy_id', activeGalaxyId);
     } catch (e) {
-      console.warn('LocalStorage save error', e);
+      console.warn('LocalStorage save error:', e);
     }
-  }, [nodes, links]);
+  }, [nodes, links, activeGalaxyId]);
 
   useEffect(() => {
     const handleBeforeInstall = (e) => {
@@ -158,7 +194,114 @@ export const SpaceProvider = ({ children }) => {
     };
   }, []);
 
-  // Firestore Sync with local-edit protection
+  // Multi-Galaxy Actions
+  const createGalaxyMap = useCallback((customName) => {
+    const newId = `galaxy-${Date.now()}`;
+    const name = customName || `Galaxy Workspace ${Object.keys(galaxyMaps).length + 1}`;
+    
+    // Blank starter card for the new galaxy map
+    const freshNodes = {
+      [`node-${Date.now()}`]: {
+        id: `node-${Date.now()}`,
+        title: `✨ ${name}`,
+        content: 'New blank galaxy map created. Double-click anywhere to add thoughts, or drag (+) handles to connect.',
+        x: -150,
+        y: -100,
+        width: 300,
+        height: 180,
+        color: 'cyan',
+        tags: ['galaxy'],
+        pinned: false,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      }
+    };
+
+    const newMap = {
+      id: newId,
+      name,
+      nodes: freshNodes,
+      links: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+
+    setGalaxyMaps((prev) => {
+      const updated = { ...prev, [newId]: newMap };
+      localStorage.setItem('nebula_galaxy_maps', JSON.stringify(updated));
+      return updated;
+    });
+
+    setActiveGalaxyId(newId);
+    setNodes(freshNodes);
+    setLinks([]);
+    setSelection({ nodeIds: [], linkId: null });
+    setCamera({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 0.95 });
+    ambientAudio.playNodeCreatedSound();
+  }, [galaxyMaps]);
+
+  const switchGalaxyMap = useCallback((galaxyId) => {
+    if (!galaxyMaps[galaxyId] || galaxyId === activeGalaxyId) return;
+
+    // Save current active map first
+    setGalaxyMaps((prev) => {
+      const updated = {
+        ...prev,
+        [activeGalaxyId]: {
+          ...prev[activeGalaxyId],
+          nodes,
+          links,
+          updatedAt: Date.now()
+        }
+      };
+      localStorage.setItem('nebula_galaxy_maps', JSON.stringify(updated));
+      return updated;
+    });
+
+    const targetMap = galaxyMaps[galaxyId];
+    setActiveGalaxyId(galaxyId);
+    setNodes(targetMap.nodes || {});
+    setLinks(targetMap.links || []);
+    setSelection({ nodeIds: [], linkId: null });
+    setCamera({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 0.95 });
+    ambientAudio.playTetherSound();
+  }, [galaxyMaps, activeGalaxyId, nodes, links]);
+
+  const deleteGalaxyMap = useCallback((galaxyId) => {
+    const mapKeys = Object.keys(galaxyMaps);
+    if (mapKeys.length <= 1) return; // Retain at least one galaxy map
+
+    setGalaxyMaps((prev) => {
+      const next = { ...prev };
+      delete next[galaxyId];
+      localStorage.setItem('nebula_galaxy_maps', JSON.stringify(next));
+
+      if (activeGalaxyId === galaxyId) {
+        const remainingId = Object.keys(next)[0];
+        setActiveGalaxyId(remainingId);
+        setNodes(next[remainingId].nodes || {});
+        setLinks(next[remainingId].links || []);
+      }
+      return next;
+    });
+
+    ambientAudio.playDeleteSound();
+  }, [galaxyMaps, activeGalaxyId]);
+
+  const renameGalaxyMap = useCallback((galaxyId, newName) => {
+    if (!newName || !newName.trim()) return;
+    setGalaxyMaps((prev) => {
+      if (!prev[galaxyId]) return prev;
+      const updated = {
+        ...prev,
+        [galaxyId]: { ...prev[galaxyId], name: newName.trim(), updatedAt: Date.now() }
+      };
+      localStorage.setItem('nebula_galaxy_maps', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  // Firestore Sync
   useEffect(() => {
     if (!db) {
       setSyncStatus('offline');
@@ -178,7 +321,6 @@ export const SpaceProvider = ({ children }) => {
           snapshot.docs.forEach((doc) => {
             const data = doc.data();
             const lastLocal = lastLocalEditTimeRef.current[doc.id] || 0;
-            // Ignore cloud snapshot if edited locally within last 1.5s unless cloud doc is strictly newer
             if (now - lastLocal > 1500 || (data.updatedAt && data.updatedAt >= lastLocal)) {
               cloudNodes[doc.id] = {
                 id: doc.id,
@@ -191,10 +333,6 @@ export const SpaceProvider = ({ children }) => {
           if (Object.keys(cloudNodes).length > 0) {
             setNodes((prev) => ({ ...(prev || {}), ...cloudNodes }));
           }
-        } else if (!currentUser) {
-          Object.values(INITIAL_NODES).forEach((node) => {
-            setDoc(doc(db, 'nebula_thoughts', node.id), node).catch(console.error);
-          });
         }
         setSyncStatus('synced');
       },
@@ -210,10 +348,6 @@ export const SpaceProvider = ({ children }) => {
         if (!snapshot.empty) {
           const cloudLinks = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
           setLinks(cloudLinks);
-        } else if (!currentUser) {
-          INITIAL_LINKS.forEach((link) => {
-            setDoc(doc(db, 'nebula_links', link.id), link).catch(console.error);
-          });
         }
       },
       (error) => console.warn('Firestore links warning:', error)
@@ -460,9 +594,23 @@ export const SpaceProvider = ({ children }) => {
 
   const resetWorkspaceState = useCallback(() => {
     try {
+      localStorage.removeItem('nebula_galaxy_maps');
+      localStorage.removeItem('nebula_active_galaxy_id');
       localStorage.removeItem('nebula_nodes');
       localStorage.removeItem('nebula_links');
     } catch (e) {}
+    const defaultMap = {
+      [DEFAULT_GALAXY_ID]: {
+        id: DEFAULT_GALAXY_ID,
+        name: 'Milky Way Galaxy',
+        nodes: INITIAL_NODES,
+        links: INITIAL_LINKS,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      }
+    };
+    setGalaxyMaps(defaultMap);
+    setActiveGalaxyId(DEFAULT_GALAXY_ID);
     setNodes(INITIAL_NODES);
     setLinks(INITIAL_LINKS);
     setCamera({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 0.95 });
@@ -474,6 +622,16 @@ export const SpaceProvider = ({ children }) => {
         currentUser,
         signInWithGoogle,
         signOutUser,
+        galaxyMaps,
+        activeGalaxyId,
+        createGalaxyMap,
+        switchGalaxyMap,
+        deleteGalaxyMap,
+        renameGalaxyMap,
+        showLanding,
+        setShowLanding,
+        isChromeModalOpen,
+        setIsChromeModalOpen,
         nodes: nodes || {},
         links: allCombinedLinks,
         manualLinks: links || [],
