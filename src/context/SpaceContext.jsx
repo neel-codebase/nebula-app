@@ -110,6 +110,7 @@ export const SpaceProvider = ({ children }) => {
   const [isAudioActive, setIsAudioActive] = useState(false);
 
   const pendingSyncRef = useRef({});
+  const lastLocalEditTimeRef = useRef({});
 
   useEffect(() => {
     if (!auth) return;
@@ -157,7 +158,7 @@ export const SpaceProvider = ({ children }) => {
     };
   }, []);
 
-  // Firestore Sync
+  // Firestore Sync with local-edit protection
   useEffect(() => {
     if (!db) {
       setSyncStatus('offline');
@@ -172,11 +173,24 @@ export const SpaceProvider = ({ children }) => {
       collection(db, collectionName),
       (snapshot) => {
         if (!snapshot.empty) {
+          const now = Date.now();
           const cloudNodes = {};
           snapshot.docs.forEach((doc) => {
-            cloudNodes[doc.id] = { id: doc.id, ...doc.data() };
+            const data = doc.data();
+            const lastLocal = lastLocalEditTimeRef.current[doc.id] || 0;
+            // Ignore cloud snapshot if edited locally within last 1.5s unless cloud doc is strictly newer
+            if (now - lastLocal > 1500 || (data.updatedAt && data.updatedAt >= lastLocal)) {
+              cloudNodes[doc.id] = {
+                id: doc.id,
+                width: 300,
+                height: 200,
+                ...data
+              };
+            }
           });
-          setNodes((prev) => ({ ...(prev || {}), ...cloudNodes }));
+          if (Object.keys(cloudNodes).length > 0) {
+            setNodes((prev) => ({ ...(prev || {}), ...cloudNodes }));
+          }
         } else if (!currentUser) {
           Object.values(INITIAL_NODES).forEach((node) => {
             setDoc(doc(db, 'nebula_thoughts', node.id), node).catch(console.error);
@@ -212,7 +226,9 @@ export const SpaceProvider = ({ children }) => {
   }, [currentUser]);
 
   const syncNodeToCloud = useCallback((node, immediate = false) => {
-    if (!db || !node) return;
+    if (!node) return;
+    lastLocalEditTimeRef.current[node.id] = Date.now();
+    if (!db) return;
     setSyncStatus('syncing');
     const collectionName = currentUser ? `users/${currentUser.uid}/nebula_thoughts` : 'nebula_thoughts';
 
@@ -262,6 +278,7 @@ export const SpaceProvider = ({ children }) => {
       updatedAt: Date.now()
     };
 
+    lastLocalEditTimeRef.current[id] = Date.now();
     setNodes((prev) => ({ ...(prev || {}), [id]: newNode }));
     setSelection({ nodeIds: [id], linkId: null });
     syncNodeToCloud(newNode, true);
@@ -270,6 +287,7 @@ export const SpaceProvider = ({ children }) => {
   }, [camera, syncNodeToCloud]);
 
   const updateNode = useCallback((id, updates, immediateSync = false) => {
+    lastLocalEditTimeRef.current[id] = Date.now();
     setNodes((prev) => {
       const current = prev || {};
       const existing = current[id];
@@ -291,15 +309,17 @@ export const SpaceProvider = ({ children }) => {
   }, [syncNodeToCloud]);
 
   const moveNodes = useCallback((nodeIds = [], deltaX = 0, deltaY = 0) => {
+    const now = Date.now();
     setNodes((prev) => {
       const next = { ...(prev || {}) };
       nodeIds.forEach((id) => {
         if (next[id]) {
+          lastLocalEditTimeRef.current[id] = now;
           const updated = {
             ...next[id],
             x: next[id].x + deltaX,
             y: next[id].y + deltaY,
-            updatedAt: Date.now()
+            updatedAt: now
           };
           next[id] = updated;
           syncNodeToCloud(updated, false);

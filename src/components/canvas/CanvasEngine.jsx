@@ -372,7 +372,11 @@ export const CanvasEngine = ({ onCanvasClick }) => {
 
   const handleWheel = (e) => {
     e.preventDefault();
-    const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+    const isPinch = e.ctrlKey || Math.abs(e.deltaY) < 40;
+    const zoomFactor = isPinch
+      ? Math.pow(1.002, -e.deltaY)
+      : e.deltaY < 0 ? 1.08 : 0.92;
+
     const newZoom = Math.min(Math.max(camera.zoom * zoomFactor, 0.15), 4.5);
 
     const mouseX = e.clientX;
@@ -488,10 +492,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       });
 
       if (doubleClickedLink && !doubleClickedLink.isAutoTag) {
-        const newLabel = prompt('Rename Connection Tether:', doubleClickedLink.label || 'connects to');
-        if (newLabel !== null) {
-          updateLink(doubleClickedLink.id, { label: newLabel.trim() || 'connects to' });
-        }
+        setSelection({ nodeIds: [], linkId: doubleClickedLink.id });
       }
     }
   };

@@ -158,12 +158,14 @@ export const ThoughtNodeOverlay = () => {
       const dropWorldY = (upEvt.clientY - camera.y) / camera.zoom;
 
       const targetNode = Object.values(nodes || {}).find((n) => {
+        const w = n.width || 300;
+        const h = n.height || 200;
         return (
           n.id !== sourceNodeId &&
           dropWorldX >= n.x - 35 &&
-          dropWorldX <= n.x + n.width + 35 &&
+          dropWorldX <= n.x + w + 35 &&
           dropWorldY >= n.y - 35 &&
-          dropWorldY <= n.y + n.height + 35
+          dropWorldY <= n.y + h + 35
         );
       });
 
@@ -311,6 +313,7 @@ export const ThoughtNodeOverlay = () => {
 
               <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity flex-shrink-0">
                 <button
+                  onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation();
                     updateNode(node.id, { pinned: !node.pinned }, true);
@@ -332,6 +335,7 @@ export const ThoughtNodeOverlay = () => {
                 </button>
 
                 <button
+                  onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation();
                     setEditingNodeId(node.id);
@@ -343,6 +347,7 @@ export const ThoughtNodeOverlay = () => {
                 </button>
 
                 <button
+                  onPointerDown={(e) => e.stopPropagation()}
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteNode(node.id);
@@ -382,6 +387,7 @@ export const ThoughtNodeOverlay = () => {
                 {['cyan', 'purple', 'emerald', 'amber', 'rose'].map((c) => (
                   <button
                     key={c}
+                    onPointerDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
                       updateNode(node.id, { color: c }, true);
