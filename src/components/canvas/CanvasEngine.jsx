@@ -10,7 +10,6 @@ const COLOR_MAP = {
   indigo: { main: '#6366f1', glow: 'rgba(99, 102, 241, 0.4)', bg: 'rgba(99, 102, 241, 0.1)' },
 };
 
-// Calculate perimeter anchor point on rectangular node card
 const getCardAnchorPoint = (source, target) => {
   const srcCenterX = source.x + source.width / 2;
   const srcCenterY = source.y + source.height / 2;
@@ -42,20 +41,26 @@ export const CanvasEngine = ({ onCanvasClick }) => {
     camera,
     setCamera,
     selection,
+    setSelection,
     activeTool,
     tetherDraft,
     setTetherDraft,
     createNode,
-    createLink
+    updateLink,
+    deleteLink
   } = useSpace();
 
   const isPanningRef = useRef(false);
   const startPanRef = useRef({ x: 0, y: 0 });
   const mouseWorldRef = useRef({ x: 0, y: 0 });
+
+  // Marquee Selection Box Ref
+  const marqueeRef = useRef(null); // { startWorldX, startWorldY, currentWorldX, currentWorldY }
+
   const animFrameRef = useRef(null);
   const particlesRef = useRef([]);
 
-  // Initialize 1200-particle Pythagorean Gravity Nexus
+  // Initialize Particles
   useEffect(() => {
     const particles = [];
     const count = 1000;
@@ -72,6 +77,17 @@ export const CanvasEngine = ({ onCanvasClick }) => {
     }
     particlesRef.current = particles;
   }, []);
+
+  // Keyboard shortcut listener for deleting selected link
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selection.linkId) {
+        deleteLink(selection.linkId);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selection.linkId, deleteLink]);
 
   const screenToWorld = useCallback((screenX, screenY) => {
     return {
@@ -107,7 +123,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       ctx.fillStyle = '#030712';
       ctx.fillRect(0, 0, width, height);
 
-      // Viewport transformation matrix
+      // Viewport matrix
       ctx.save();
       ctx.translate(camera.x, camera.y);
       ctx.scale(camera.zoom, camera.zoom);
@@ -144,7 +160,6 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       const viewMaxY = (height - camera.y) / camera.zoom + 200;
 
       particles.forEach((p) => {
-        // Cursor gravitational pull
         const dxMouse = mouseWorld.x - p.x;
         const dyMouse = mouseWorld.y - p.y;
         const distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
@@ -175,7 +190,6 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         }
       });
 
-      // Render Pythagorean Nexus Lines using Neighboring Cell Bins
       const processedPairs = new Set();
       ctx.lineWidth = 0.9 / camera.zoom;
 
@@ -213,7 +227,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         }
       });
 
-      // 3. Links & Tethers (Manual Solid Curves vs Auto Dotted Curves)
+      // 3. Links & Tethers
       links.forEach((link) => {
         const sourceNode = nodes[link.sourceId];
         const targetNode = nodes[link.targetId];
@@ -244,14 +258,14 @@ export const CanvasEngine = ({ onCanvasClick }) => {
           ctx.strokeStyle = isSelected ? '#ffffff' : palette.main;
         }
 
-        ctx.lineWidth = (isSelected ? 3.5 : isAutoTag ? 1.8 : 2.4) / camera.zoom;
+        ctx.lineWidth = (isSelected ? 3.8 : isAutoTag ? 1.8 : 2.4) / camera.zoom;
         ctx.beginPath();
         ctx.moveTo(srcAnchor.x, srcAnchor.y);
         ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, tgtAnchor.x, tgtAnchor.y);
         ctx.stroke();
         ctx.restore();
 
-        // Flowing Energy Impulse Dot
+        // Impulse particle
         const impulseCount = isAutoTag ? 1 : 2;
         for (let i = 0; i < impulseCount; i++) {
           const progress = ((time * (isAutoTag ? 0.4 : 0.6) + i / impulseCount) % 1);
@@ -280,9 +294,9 @@ export const CanvasEngine = ({ onCanvasClick }) => {
           const textWidth = ctx.measureText(link.label).width;
           const pillPadding = 7;
 
-          ctx.fillStyle = isAutoTag ? 'rgba(3, 7, 18, 0.95)' : 'rgba(11, 15, 25, 0.95)';
-          ctx.strokeStyle = palette.main;
-          ctx.lineWidth = 1 / camera.zoom;
+          ctx.fillStyle = isSelected ? '#06b6d4' : isAutoTag ? 'rgba(3, 7, 18, 0.95)' : 'rgba(11, 15, 25, 0.95)';
+          ctx.strokeStyle = isSelected ? '#ffffff' : palette.main;
+          ctx.lineWidth = (isSelected ? 1.8 : 1) / camera.zoom;
           ctx.beginPath();
           ctx.roundRect(
             mx - textWidth / 2 - pillPadding,
@@ -294,14 +308,33 @@ export const CanvasEngine = ({ onCanvasClick }) => {
           ctx.fill();
           ctx.stroke();
 
-          ctx.fillStyle = isAutoTag ? palette.main : '#f3f4f6';
+          ctx.fillStyle = isSelected ? '#ffffff' : isAutoTag ? palette.main : '#f3f4f6';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(link.label, mx, my);
         }
       });
 
-      // 4. Active Tether Draft Line (During Card Drag-to-Connect)
+      // 4. Marquee Selection Rect (Multi-Card Box Drag)
+      if (marqueeRef.current) {
+        const { startWorldX, startWorldY, currentWorldX, currentWorldY } = marqueeRef.current;
+        const rectX = Math.min(startWorldX, currentWorldX);
+        const rectY = Math.min(startWorldY, currentWorldY);
+        const rectW = Math.abs(currentWorldX - startWorldX);
+        const rectH = Math.abs(currentWorldY - startWorldY);
+
+        ctx.strokeStyle = '#06b6d4';
+        ctx.fillStyle = 'rgba(6, 182, 212, 0.12)';
+        ctx.lineWidth = 1.5 / camera.zoom;
+        ctx.setLineDash([4 / camera.zoom, 4 / camera.zoom]);
+        ctx.beginPath();
+        ctx.rect(rectX, rectY, rectW, rectH);
+        ctx.fill();
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // 5. Active Tether Draft Line
       if (tetherDraft && nodes[tetherDraft.sourceId]) {
         const srcNode = nodes[tetherDraft.sourceId];
         const srcAnchor = {
@@ -358,12 +391,39 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       startPanRef.current = { x: e.clientX - camera.x, y: e.clientY - camera.y };
       return;
     }
+
     if (e.target === canvasRef.current) {
+      const worldPos = screenToWorld(e.clientX, e.clientY);
+
       if (activeTool === 'node') {
-        const worldPos = screenToWorld(e.clientX, e.clientY);
         createNode(worldPos.x, worldPos.y);
       } else {
-        onCanvasClick?.();
+        // Check if user clicked a link pill to select or rename
+        let clickedLink = null;
+        links.forEach((link) => {
+          const srcNode = nodes[link.sourceId];
+          const tgtNode = nodes[link.targetId];
+          if (!srcNode || !tgtNode) return;
+          const mx = (srcNode.x + tgtNode.x) / 2;
+          const my = (srcNode.y + tgtNode.y) / 2;
+          const dist = Math.sqrt((worldPos.x - mx) ** 2 + (worldPos.y - my) ** 2);
+          if (dist < 40) {
+            clickedLink = link;
+          }
+        });
+
+        if (clickedLink) {
+          setSelection({ nodeIds: [], linkId: clickedLink.id });
+        } else {
+          // Initiate Marquee Drag Selection on Canvas Background
+          marqueeRef.current = {
+            startWorldX: worldPos.x,
+            startWorldY: worldPos.y,
+            currentWorldX: worldPos.x,
+            currentWorldY: worldPos.y
+          };
+          onCanvasClick?.();
+        }
       }
     }
   };
@@ -378,6 +438,9 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         x: e.clientX - startPanRef.current.x,
         y: e.clientY - startPanRef.current.y
       }));
+    } else if (marqueeRef.current) {
+      marqueeRef.current.currentWorldX = worldPos.x;
+      marqueeRef.current.currentWorldY = worldPos.y;
     } else if (tetherDraft) {
       setTetherDraft((prev) => (prev ? { ...prev, x: worldPos.x, y: worldPos.y } : null));
     }
@@ -385,6 +448,43 @@ export const CanvasEngine = ({ onCanvasClick }) => {
 
   const handleMouseUp = () => {
     if (isPanningRef.current) isPanningRef.current = false;
+
+    // Complete Marquee Drag Selection
+    if (marqueeRef.current) {
+      const { startWorldX, startWorldY, currentWorldX, currentWorldY } = marqueeRef.current;
+      const minX = Math.min(startWorldX, currentWorldX);
+      const maxX = Math.max(startWorldX, currentWorldX);
+      const minY = Math.min(startWorldY, currentWorldY);
+      const maxY = Math.max(startWorldY, currentWorldY);
+
+      // Select all nodes intersecting marquee bounds (if drag area > 10px)
+      if (maxX - minX > 10 && maxY - minY > 10) {
+        const selectedIds = Object.values(nodes).filter((node) => {
+          return (
+            node.x + node.width >= minX &&
+            node.x <= maxX &&
+            node.y + node.height >= minY &&
+            node.y <= maxY
+          );
+        }).map((n) => n.id);
+
+        setSelection({ nodeIds: selectedIds, linkId: null });
+      }
+
+      marqueeRef.current = null;
+    }
+  };
+
+  const handleDoubleClick = (e) => {
+    if (e.target === canvasRef.current && selection.linkId) {
+      const link = links.find((l) => l.id === selection.linkId);
+      if (link && !link.isAutoTag) {
+        const newLabel = prompt('Rename Tether Label:', link.label || 'relates to');
+        if (newLabel !== null) {
+          updateLink(link.id, { label: newLabel.trim() || 'relates to' });
+        }
+      }
+    }
   };
 
   return (
@@ -394,6 +494,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onDoubleClick={handleDoubleClick}
       onContextMenu={(e) => e.preventDefault()}
       className={`absolute inset-0 block w-full h-full touch-none ${
         activeTool === 'pan' || isPanningRef.current ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
