@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { useSpace } from '../../context/SpaceContext';
+import { FormattedText } from './FormattedText';
 import { 
   Pin, 
   Trash2, 
@@ -7,7 +8,8 @@ import {
   Link2, 
   Tag, 
   GripHorizontal,
-  Plus
+  Plus,
+  Scaling
 } from 'lucide-react';
 
 const COLOR_ACCENTS = {
@@ -26,6 +28,7 @@ export const ThoughtNodeOverlay = () => {
     selection,
     setSelection,
     updateNode,
+    moveNodes,
     deleteNode,
     setTetherDraft,
     createLink,
@@ -33,19 +36,32 @@ export const ThoughtNodeOverlay = () => {
   } = useSpace();
 
   const draggingNodeRef = useRef(null);
-  const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const dragLastPosRef = useRef({ x: 0, y: 0 });
 
+  // Handle Card Drag (Single or Group Movement)
   const handlePointerDown = (e, node) => {
     e.stopPropagation();
-    setSelection({ nodeIds: [node.id], linkId: null });
+
+    // Multi-selection key modifier (Shift or Cmd/Ctrl)
+    if (e.shiftKey || e.metaKey || e.ctrlKey) {
+      const alreadySelected = selection.nodeIds.includes(node.id);
+      const newSelected = alreadySelected
+        ? selection.nodeIds.filter((id) => id !== node.id)
+        : [...selection.nodeIds, node.id];
+      setSelection({ nodeIds: newSelected, linkId: null });
+      return;
+    }
+
+    // If node not in active multi-selection, select it singly
+    const isMulti = selection.nodeIds.length > 1 && selection.nodeIds.includes(node.id);
+    const activeSelectedIds = isMulti ? selection.nodeIds : [node.id];
+    setSelection({ nodeIds: activeSelectedIds, linkId: null });
 
     if (e.button === 0) {
       draggingNodeRef.current = node.id;
-      const screenX = e.clientX;
-      const screenY = e.clientY;
-      dragOffsetRef.current = {
-        x: (screenX - camera.x) / camera.zoom - node.x,
-        y: (screenY - camera.y) / camera.zoom - node.y,
+      dragLastPosRef.current = {
+        x: (e.clientX - camera.x) / camera.zoom,
+        y: (e.clientY - camera.y) / camera.zoom,
       };
 
       const handlePointerMove = (moveEvt) => {
@@ -53,10 +69,13 @@ export const ThoughtNodeOverlay = () => {
           const currentWorldX = (moveEvt.clientX - camera.x) / camera.zoom;
           const currentWorldY = (moveEvt.clientY - camera.y) / camera.zoom;
 
-          updateNode(node.id, {
-            x: currentWorldX - dragOffsetRef.current.x,
-            y: currentWorldY - dragOffsetRef.current.y,
-          });
+          const deltaX = currentWorldX - dragLastPosRef.current.x;
+          const deltaY = currentWorldY - dragLastPosRef.current.y;
+
+          dragLastPosRef.current = { x: currentWorldX, y: currentWorldY };
+
+          // Move all selected nodes together maintaining relative offsets
+          moveNodes(activeSelectedIds, deltaX, deltaY);
         }
       };
 
@@ -71,7 +90,36 @@ export const ThoughtNodeOverlay = () => {
     }
   };
 
-  // Robust Card-to-Card Manual Tether Dragging
+  // Card Resizing Handle Drag
+  const startResize = (e, node) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const startWidth = node.width;
+    const startHeight = node.height;
+    const startX = e.clientX;
+    const startY = e.clientY;
+
+    const handleResizeMove = (moveEvt) => {
+      const deltaScreenX = moveEvt.clientX - startX;
+      const deltaScreenY = moveEvt.clientY - startY;
+
+      const newWidth = Math.max(220, startWidth + deltaScreenX / camera.zoom);
+      const newHeight = Math.max(140, startHeight + deltaScreenY / camera.zoom);
+
+      updateNode(node.id, { width: newWidth, height: newHeight });
+    };
+
+    const handleResizeUp = () => {
+      window.removeEventListener('pointermove', handleResizeMove);
+      window.removeEventListener('pointerup', handleResizeUp);
+    };
+
+    window.addEventListener('pointermove', handleResizeMove);
+    window.addEventListener('pointerup', handleResizeUp);
+  };
+
+  // Drag-to-Connect Manual Tethering
   const startTetherDraft = (e, sourceNodeId) => {
     e.stopPropagation();
     e.preventDefault();
@@ -105,7 +153,6 @@ export const ThoughtNodeOverlay = () => {
       const dropWorldX = (upEvt.clientX - camera.x) / camera.zoom;
       const dropWorldY = (upEvt.clientY - camera.y) / camera.zoom;
 
-      // Find target node card under cursor (with generous padding for easy dropping)
       const targetNode = Object.values(nodes).find((n) => {
         return (
           n.id !== sourceNodeId &&
@@ -163,7 +210,7 @@ export const ThoughtNodeOverlay = () => {
               isSelected ? 'ring-2 ring-cyan-400 shadow-2xl scale-[1.01]' : 'hover:scale-[1.005]'
             }`}
           >
-            {/* Dedicated Tether Anchor UI Button (Right Edge Handle) */}
+            {/* Dedicated Tether Anchor UI Button */}
             <button
               onPointerDown={(e) => startTetherDraft(e, node.id)}
               className="absolute -right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-2 border-slate-900 shadow-glow-cyan flex items-center justify-center opacity-80 hover:opacity-100 hover:scale-125 transition-all z-20 cursor-crosshair"
@@ -172,13 +219,20 @@ export const ThoughtNodeOverlay = () => {
               <Plus className="w-4 h-4" />
             </button>
 
+            {/* Bottom-Right Corner Resize Handle */}
+            <div
+              onPointerDown={(e) => startResize(e, node)}
+              className="absolute right-1 bottom-1 p-1 text-slate-400 hover:text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-se-resize z-20"
+              title="Drag to resize card"
+            >
+              <Scaling className="w-3.5 h-3.5" />
+            </div>
+
             {/* Top Card Controls Header */}
             <div className="flex items-center justify-between gap-2 border-b border-white/5 pb-2.5 mb-2">
               <div className="flex items-center gap-2 overflow-hidden">
                 <GripHorizontal className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 transition-opacity cursor-grab text-slate-400 flex-shrink-0" />
-                <h3 className="font-semibold text-slate-100 truncate text-sm tracking-wide">
-                  {node.title}
-                </h3>
+                <FormattedText text={node.title} className="font-semibold text-slate-100 truncate text-sm tracking-wide" />
               </div>
 
               <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity flex-shrink-0">
@@ -227,10 +281,10 @@ export const ThoughtNodeOverlay = () => {
               </div>
             </div>
 
-            {/* Card Content Body */}
-            <p className="text-slate-300 text-xs leading-relaxed line-clamp-4 font-normal mb-3 whitespace-pre-wrap">
-              {node.content}
-            </p>
+            {/* Card Content Body with Rich Text Formatting */}
+            <div className="mb-3 overflow-hidden text-xs">
+              <FormattedText text={node.content} />
+            </div>
 
             {/* Tags Footer & Color Selector */}
             <div className="flex items-center justify-between gap-2 pt-2 border-t border-white/5 text-[10px]">
@@ -263,7 +317,7 @@ export const ThoughtNodeOverlay = () => {
               </div>
             </div>
 
-            {/* Glowing Corner Indicator */}
+            {/* Glowing Selection Indicator */}
             {isSelected && (
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-cyan-400 rounded-full animate-ping opacity-75" />
             )}

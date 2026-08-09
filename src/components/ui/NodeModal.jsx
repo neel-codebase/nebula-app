@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSpace } from '../../context/SpaceContext';
+import { FormatToolbar } from './FormatToolbar';
 import { 
   X, 
   Trash2, 
@@ -8,8 +9,7 @@ import {
   Check, 
   Sparkles, 
   Palette,
-  Link2,
-  Edit2
+  Link2
 } from 'lucide-react';
 
 const COLOR_OPTIONS = [
@@ -30,7 +30,7 @@ export const NodeModal = () => {
     updateNode,
     deleteNode,
     deleteLink,
-    createLink
+    updateLink
   } = useSpace();
 
   const node = editingNodeId ? nodes[editingNodeId] : null;
@@ -41,6 +41,8 @@ export const NodeModal = () => {
   const [tagInput, setTagInput] = useState('');
   const [color, setColor] = useState('cyan');
   const [pinned, setPinned] = useState(false);
+
+  const textareaRef = useRef(null);
 
   useEffect(() => {
     if (node) {
@@ -54,7 +56,6 @@ export const NodeModal = () => {
 
   if (!node) return null;
 
-  // Active manual links connected to this node
   const activeNodeLinks = (manualLinks || []).filter(
     (l) => l.sourceId === node.id || l.targetId === node.id
   );
@@ -136,16 +137,28 @@ export const NodeModal = () => {
           />
         </div>
 
-        {/* Content Area */}
+        {/* Content Area with Rich Format Toolbar */}
         <div>
-          <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-            Spatial Notes / Content
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              Spatial Notes & Markdown Content
+            </label>
+          </div>
+
+          <div className="mb-2">
+            <FormatToolbar
+              textareaRef={textareaRef}
+              value={content}
+              onChange={(val) => setContent(val)}
+            />
+          </div>
+
           <textarea
-            rows={4}
+            ref={textareaRef}
+            rows={5}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Write detailed spatial thoughts, links, #tags..."
+            placeholder="Write detailed notes with #tags, [links](url), **bold**, ==highlights==..."
             className="w-full px-3 py-2 text-xs rounded-xl glass-input resize-none leading-relaxed font-mono"
           />
         </div>
@@ -204,7 +217,7 @@ export const NodeModal = () => {
           />
         </div>
 
-        {/* Connections Management Section (Step 4) */}
+        {/* Connections Management Section */}
         <div className="pt-2 border-t border-white/10">
           <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
             <Link2 className="w-3 h-3 text-purple-400" />
@@ -224,18 +237,22 @@ export const NodeModal = () => {
                     key={link.id}
                     className="flex items-center justify-between gap-2 p-2 rounded-xl bg-white/5 border border-white/10 text-xs"
                   >
-                    <div className="overflow-hidden">
+                    <div className="overflow-hidden flex-1">
                       <span className="font-semibold text-cyan-300 truncate block">
-                        {otherNode ? otherNode.title : 'Connected Thought'}
+                        {otherNode ? otherNode.title.replace(/^#+\s*/, '') : 'Connected Thought'}
                       </span>
-                      <span className="text-[10px] text-slate-400">
-                        {link.label || 'relates to'}
-                      </span>
+                      <input
+                        type="text"
+                        defaultValue={link.label || 'relates to'}
+                        onBlur={(e) => updateLink(link.id, { label: e.target.value.trim() || 'relates to' })}
+                        className="bg-transparent text-[10px] text-slate-400 focus:text-white border-b border-transparent focus:border-cyan-400 focus:outline-none w-full"
+                        title="Click to rename link label"
+                      />
                     </div>
 
                     <button
                       onClick={() => deleteLink(link.id)}
-                      className="p-1 rounded hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors"
+                      className="p-1.5 rounded hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors"
                       title="Delete connection"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

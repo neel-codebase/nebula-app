@@ -15,12 +15,12 @@ const SpaceContext = createContext(null);
 const INITIAL_NODES = {
   'node-1': {
     id: 'node-1',
-    title: '🌌 Nebula Architecture',
-    content: 'Cloud-synced infinite spatial canvas engineered for high-leveraged thought management. Includes #pwa and #vite.',
+    title: '# 🌌 Nebula Architecture',
+    content: 'Cloud-synced infinite spatial canvas engineered for high-leveraged thought management.\n\n## Core Features\n- Includes **#pwa** and **#vite**.\n- Visit [Documentation](https://nebula-app-kappa.vercel.app)',
     x: 0,
     y: 0,
     width: 320,
-    height: 200,
+    height: 220,
     color: 'cyan',
     tags: ['pwa', 'vite', 'architecture'],
     pinned: true,
@@ -30,11 +30,11 @@ const INITIAL_NODES = {
   'node-2': {
     id: 'node-2',
     title: '🎨 HTML5 Canvas Engine',
-    content: '60FPS rendering pipeline featuring high-DPI scaling, elastic bezier tethers, & Pythagorean gravity nexus. Built for #pwa.',
+    content: '60FPS rendering pipeline featuring ==high-DPI scaling==, elastic bezier tethers, & Pythagorean gravity nexus. Built for #pwa.',
     x: 450,
     y: -120,
     width: 300,
-    height: 190,
+    height: 200,
     color: 'purple',
     tags: ['canvas', 'physics', 'pwa'],
     pinned: false,
@@ -106,7 +106,6 @@ export const SpaceProvider = ({ children }) => {
 
   const pendingSyncRef = useRef({});
 
-  // Auth Listener
   useEffect(() => {
     if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -246,8 +245,8 @@ export const SpaceProvider = ({ children }) => {
       content: content || 'Click double-tap or edit icon to add detailed spatial notes...',
       x: worldX ?? (window.innerWidth / 2 - camera.x) / camera.zoom,
       y: worldY ?? (window.innerHeight / 2 - camera.y) / camera.zoom,
-      width: 290,
-      height: 180,
+      width: 300,
+      height: 200,
       color,
       tags: parsedTags,
       pinned: false,
@@ -282,6 +281,26 @@ export const SpaceProvider = ({ children }) => {
     });
   }, [syncNodeToCloud]);
 
+  // Group Node Movement
+  const moveNodes = useCallback((nodeIds = [], deltaX = 0, deltaY = 0) => {
+    setNodes((prev) => {
+      const next = { ...prev };
+      nodeIds.forEach((id) => {
+        if (next[id]) {
+          const updated = {
+            ...next[id],
+            x: next[id].x + deltaX,
+            y: next[id].y + deltaY,
+            updatedAt: Date.now()
+          };
+          next[id] = updated;
+          syncNodeToCloud(updated, false);
+        }
+      });
+      return next;
+    });
+  }, [syncNodeToCloud]);
+
   const deleteNode = useCallback((id) => {
     setNodes((prev) => {
       const next = { ...prev };
@@ -310,6 +329,19 @@ export const SpaceProvider = ({ children }) => {
     ambientAudio.playTetherSound();
   }, [links, syncLinkToCloud]);
 
+  const updateLink = useCallback((linkId, updates) => {
+    setLinks((prev) => {
+      return prev.map((l) => {
+        if (l.id === linkId) {
+          const updated = { ...l, ...updates };
+          syncLinkToCloud(updated);
+          return updated;
+        }
+        return l;
+      });
+    });
+  }, [syncLinkToCloud]);
+
   const deleteLink = useCallback((linkId) => {
     setLinks((prev) => prev.filter((l) => l.id !== linkId));
     setSelection((prev) => ({ ...prev, linkId: null }));
@@ -320,10 +352,8 @@ export const SpaceProvider = ({ children }) => {
     ambientAudio.playDeleteSound();
   }, [currentUser]);
 
-  // Step 5: Ignore pinned nodes in Auto-Layout algorithm
   const autoLayout = useCallback(() => {
     const allNodeKeys = Object.keys(nodes);
-    // Unpinned nodes only
     const unpinnedKeys = allNodeKeys.filter((k) => !nodes[k].pinned);
 
     if (unpinnedKeys.length === 0) return;
@@ -431,8 +461,10 @@ export const SpaceProvider = ({ children }) => {
         triggerPwaInstall,
         createNode,
         updateNode,
+        moveNodes,
         deleteNode,
         createLink,
+        updateLink,
         deleteLink,
         autoLayout,
         resetView,
