@@ -1,188 +1,159 @@
-import React, { useState, useEffect } from 'react';
-import { Sparkles, ArrowRight, Compass, ShieldCheck, Zap, Layers, Volume2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { useSpace } from '../../context/SpaceContext';
+import { 
+  Sparkles, 
+  ArrowRight, 
+  Layers, 
+  Network, 
+  Zap, 
+  ShieldCheck, 
+  Compass,
+  Cpu,
+  Workflow
+} from 'lucide-react';
 
-export const LandingPage = ({ onEnterWorkspace }) => {
-  const [typedText, setTypedText] = useState('');
-  const [step, setStep] = useState(0); // 0: typing, 1: note 1, 2: note 2, 3: tethered
-  const [pulsePos, setPulsePos] = useState({ x: 130, y: 110 });
+export const LandingPage = ({ onClose }) => {
+  const { createNode, createLink } = useSpace();
+  const [activeTab, setActiveTab] = useState('overview');
 
-  // Simulated live typing and auto-tethering showcase
-  useEffect(() => {
-    const fullMessage = "Build spatial MVP #idea";
-    let timer;
-
-    if (step === 0) {
-      if (typedText.length < fullMessage.length) {
-        timer = setTimeout(() => {
-          setTypedText(fullMessage.slice(0, typedText.length + 1));
-        }, 75);
-      } else {
-        timer = setTimeout(() => setStep(1), 500);
-      }
-    } else if (step === 1) {
-      timer = setTimeout(() => setStep(2), 800);
-    } else if (step === 2) {
-      timer = setTimeout(() => setStep(3), 1000);
-    } else if (step === 3) {
-      timer = setTimeout(() => {
-        setTypedText('');
-        setStep(0);
-      }, 4500);
+  const handleLaunchTemplate = (templateType) => {
+    if (templateType === 'roadmap') {
+      const n1 = createNode(-300, -50, '🎯 Q3 Strategic Objectives', 'cyan', '## Core Priorities\n- [x] Launch Nebula v3.0 Engine\n- [ ] Expand #spatial intelligence\n- [ ] Scale cloud infrastructure');
+      const n2 = createNode(180, -140, '⚡ Spatial Core Architecture', 'purple', '60FPS HTML5 Canvas Engine with 1,000-particle Pythagorean Gravity Nexus.\n\nBuilt for #spatial operations.');
+      const n3 = createNode(180, 100, '🚀 Growth & Marketing', 'emerald', 'Multi-channel rollout targeting knowledge architects and solo operators.\n\nShares #spatial focus.');
+      createLink(n1, n2, 'powers', 'purple');
+      createLink(n1, n3, 'drives', 'emerald');
+    } else if (templateType === 'architecture') {
+      const n1 = createNode(-250, 0, '🌌 React & Canvas Frontend', 'cyan', 'High-DPI Retina canvas engine paired with React 18 state engine.\n\nIntegrated with #tech.');
+      const n2 = createNode(200, -100, '🔥 Firebase Cloud Persistence', 'emerald', 'Realtime Firestore sync (`onSnapshot`) with offline-first indexedDB persistence for #tech.');
+      const n3 = createNode(200, 120, '🎧 Web Audio API Synth', 'amber', 'Procedural 432Hz cosmic drone synthesizer for deep focus environment.');
+      createLink(n1, n2, 'syncs with', 'emerald');
+      createLink(n1, n3, 'synthesizes', 'amber');
     }
-
-    return () => clearTimeout(timer);
-  }, [typedText, step]);
-
-  // Pulse animation along bezier curve
-  useEffect(() => {
-    if (step < 3) return;
-    let animFrame;
-    const startTime = performance.now();
-
-    const animatePulse = (now) => {
-      const elapsed = (now - startTime) / 1800;
-      const t = elapsed % 1;
-      
-      const x = (1 - t) * (1 - t) * 130 + 2 * (1 - t) * t * 240 + t * t * 350;
-      const y = (1 - t) * (1 - t) * 110 + 2 * (1 - t) * t * 180 + t * t * 250;
-
-      setPulsePos({ x, y });
-      animFrame = requestAnimationFrame(animatePulse);
-    };
-
-    animFrame = requestAnimationFrame(animatePulse);
-    return () => cancelAnimationFrame(animFrame);
-  }, [step]);
+    onClose();
+  };
 
   return (
-    <div className="fixed inset-0 z-50 pointer-events-auto overflow-y-auto bg-[#030712] flex flex-col items-center justify-center p-6 text-center lg:text-left select-none animate-fadeIn">
-      
-      {/* Background Starfield Glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(168,85,247,0.15),transparent_70%)] pointer-events-none" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(6,182,212,0.12),transparent_60%)] pointer-events-none" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xl animate-fadeIn overflow-y-auto">
+      <div className="relative w-full max-w-4xl glass-panel rounded-3xl border border-white/15 shadow-2xl p-8 space-y-8 overflow-hidden my-auto">
+        {/* Top Glow Accent Bar */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-cyan-500 via-purple-500 to-emerald-500" />
 
-      {/* Top Brand Tag */}
-      <div className="absolute top-6 left-6 z-10 flex items-center gap-2">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center shadow-glow-cyan">
-          <Sparkles className="w-4 h-4 text-white animate-spin-slow" />
-        </div>
-        <span className="text-base font-bold tracking-wider text-white">Nebula v2.2</span>
-      </div>
-
-      {/* Split Hero Layout */}
-      <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center my-auto pt-16 pb-16 z-10">
-        
-        {/* LEFT COLUMN: Narrative & Action */}
-        <div className="space-y-6">
-          <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs px-4 py-1.5 rounded-full tracking-widest uppercase font-semibold">
-            <Compass className="w-3.5 h-3.5 text-purple-400" />
-            <span>Spatial Thought Management PWA</span>
-          </div>
-
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white leading-tight">
-            Give your thoughts room to <span className="bg-gradient-to-r from-purple-400 via-cyan-400 to-indigo-300 bg-clip-text text-transparent">breathe in space</span>.
-          </h1>
-
-          <p className="text-base md:text-lg text-white/70 font-light leading-relaxed max-w-2xl">
-            Traditional note apps force your ideas into rigid linear lists where thoughts get buried and forgotten. <strong>Nebula</strong> releases your thoughts into a fluid, infinite gravitational void where ideas naturally connect, stack, and evolve.
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left my-8">
-            <div className="p-4 bg-space-900/80 border border-white/10 rounded-2xl backdrop-blur-xl hover:border-purple-500/40 transition-colors shadow-lg">
-              <div className="text-purple-400 font-bold text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
-                <Zap className="w-3.5 h-3.5" /> 1. Capture #tags
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">Jot thoughts using <code className="text-purple-300 bg-purple-900/30 px-1 rounded">#tags</code> to auto-associate ideas.</p>
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/10 pb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center shadow-glow-cyan">
+              <Sparkles className="w-6 h-6 text-white animate-pulse" />
             </div>
-
-            <div className="p-4 bg-space-900/80 border border-white/10 rounded-2xl backdrop-blur-xl hover:border-cyan-500/40 transition-colors shadow-lg">
-              <div className="text-cyan-400 font-bold text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5" /> 2. Auto-Tether Light
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-black text-white tracking-tight">NEBULA</h1>
+                <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-xs font-bold tracking-wide">
+                  v3.0 OFFICIAL
+                </span>
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed">Curved light-lines dynamically link related concepts.</p>
-            </div>
-
-            <div className="p-4 bg-space-900/80 border border-white/10 rounded-2xl backdrop-blur-xl hover:border-emerald-500/40 transition-colors shadow-lg">
-              <div className="text-emerald-400 font-bold text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5" /> 3. Cluster & Sync
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">Click Orbit Cluster, double-click cards to edit Markdown.</p>
+              <p className="text-xs text-slate-400 font-medium">The Cloud-Synced Spatial Intelligence Engine</p>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-start items-center pt-2">
-            <button 
-              onClick={onEnterWorkspace}
-              className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold rounded-2xl shadow-glow-purple transition-all cursor-pointer hover:scale-105 active:scale-95 text-sm tracking-wide flex items-center justify-center gap-3 group"
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleLaunchTemplate('roadmap')}
+              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-semibold border border-white/10 transition-all flex items-center gap-1.5"
             >
-              <span>Enter Workspace Void</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <Workflow className="w-3.5 h-3.5 text-purple-400" />
+              <span>Load Template</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-bold shadow-glow-cyan transition-all flex items-center gap-2"
+            >
+              <span>Launch Canvas</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Interactive Tag Connection Showcase */}
-        <div className="relative h-[420px] w-full rounded-3xl bg-space-900/90 border border-white/15 overflow-hidden flex flex-col justify-between p-6 shadow-2xl glass-panel">
-          
-          <div className="flex justify-between items-center z-10">
-            <span className="text-xs font-semibold text-purple-300 uppercase tracking-widest flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-              Live Visual Tether Showcase
-            </span>
-            <span className="text-[10px] text-white/40 font-mono">Association Engine</span>
-          </div>
+        {/* Dynamic Interactive Tag Auto-Tethering Showcase Simulation */}
+        <div className="relative w-full h-48 rounded-2xl bg-slate-900/80 border border-white/10 overflow-hidden flex items-center justify-center p-6">
+          <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#06b6d4_1px,transparent_1px)] [background-size:16px_16px]" />
 
-          {/* Connected Bezier Light-Tether SVG */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 480 360" preserveAspectRatio="none">
-            {step >= 3 && (
-              <g>
-                <path 
-                  d="M 130 110 Q 240 180 350 250" 
-                  fill="none" 
-                  stroke="rgba(168, 85, 247, 0.85)" 
-                  strokeWidth="3.5"
-                  className="filter drop-shadow-[0_0_10px_#a855f7]"
-                />
-                <circle 
-                  cx={pulsePos.x} 
-                  cy={pulsePos.y} 
-                  r="5" 
-                  fill="#ffffff" 
-                  className="filter drop-shadow-[0_0_12px_#ffffff]"
-                />
-              </g>
-            )}
+          {/* SVG Animated Tether Lines */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none">
+            <line x1="25%" y1="50%" x2="75%" y2="50%" stroke="#a855f7" strokeWidth="2.5" strokeDasharray="6 4" className="animate-pulse" />
+            <circle cx="50%" cy="50%" r="4" fill="#ffffff" className="animate-ping" />
           </svg>
 
-          {/* Live Simulated Notes */}
-          <div className="relative z-10 w-full h-64">
-            {/* Note 1 */}
-            <div className={`absolute top-4 left-4 transition-all duration-500 bg-space-850/95 border border-purple-500/50 p-4 rounded-2xl w-52 shadow-2xl text-left ${step >= 1 ? 'opacity-100 scale-100' : 'opacity-30 scale-95'}`}>
-              <span className="text-[9px] uppercase tracking-wider font-semibold text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/30 mb-2 inline-block">Thought 1</span>
-              <p className="text-xs text-white/90 font-light leading-relaxed">
-                Build spatial MVP <span className="text-purple-300 font-medium drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]">#idea</span>
-              </p>
+          <div className="relative z-10 flex items-center justify-between w-full max-w-xl">
+            {/* Card 1 Preview */}
+            <div className="p-3.5 rounded-2xl glass-card border border-cyan-500/40 shadow-glow-cyan bg-cyan-500/10 w-48 space-y-1">
+              <span className="text-xs font-bold text-cyan-300 block truncate">🌌 Spatial Thought A</span>
+              <p className="text-[11px] text-slate-300">Mapping out #strategy</p>
+              <span className="inline-block px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[9px] font-semibold">#strategy</span>
             </div>
 
-            {/* Note 2 */}
-            <div className={`absolute bottom-4 right-4 transition-all duration-500 bg-space-850/95 border border-purple-500/50 p-4 rounded-2xl w-52 shadow-2xl text-left ${step >= 2 ? 'opacity-100 scale-100' : 'opacity-0 scale-90 translate-y-4'}`}>
-              <span className="text-[9px] uppercase tracking-wider font-semibold text-purple-300 bg-purple-500/20 px-2 py-0.5 rounded-full border border-purple-500/30 mb-2 inline-block">Thought 2</span>
-              <p className="text-xs text-white/90 font-light leading-relaxed">
-                Gravitational canvas <span className="text-purple-300 font-medium drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]">#idea</span>
-              </p>
+            {/* Glowing Tag Pill in Center */}
+            <div className="px-3 py-1 rounded-full bg-slate-950 border border-purple-400 text-purple-300 text-[10px] font-bold shadow-lg flex items-center gap-1 z-20">
+              <span>Auto #strategy Tether</span>
+            </div>
+
+            {/* Card 2 Preview */}
+            <div className="p-3.5 rounded-2xl glass-card border border-purple-500/40 shadow-purple-500/20 bg-purple-500/10 w-48 space-y-1">
+              <span className="text-xs font-bold text-purple-300 block truncate">⚡ System Action B</span>
+              <p className="text-[11px] text-slate-300">Connected via #strategy</p>
+              <span className="inline-block px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 text-[9px] font-semibold">#strategy</span>
             </div>
           </div>
-
-          {/* Live Typing Bar Simulation */}
-          <div className="relative z-10 bg-space-950/90 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white/80 flex items-center justify-between shadow-lg text-left">
-            <span className="font-mono">{typedText}<span className="animate-ping text-cyan-400">|</span></span>
-            <span className="text-[10px] text-purple-400 font-semibold uppercase tracking-wider">
-              {step >= 3 ? '⚡ Tether Active' : 'Auto-Tethering...'}
-            </span>
-          </div>
-
         </div>
 
+        {/* Feature Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+            <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
+              <Layers className="w-4 h-4" />
+            </div>
+            <h3 className="font-bold text-sm text-white">Unbound Infinite Canvas</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              60FPS HTML5 Canvas with 1,000-particle Pythagorean Gravity Nexus & retina scaling.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+            <div className="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center">
+              <Network className="w-4 h-4" />
+            </div>
+            <h3 className="font-bold text-sm text-white">Organic Tag Tethers</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Matching hashtags auto-tether across space while multi-anchor handles allow custom drag connections.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+              <Zap className="w-4 h-4" />
+            </div>
+            <h3 className="font-bold text-sm text-white">Rich Tasks & Focus Audio</h3>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Interactive markdown checkboxes, Notion-style WYSIWYG tether popover, and 432Hz ambient focus audio.
+            </p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/10 text-xs text-slate-400">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-400" /> Cloud Synced</span>
+            <span className="flex items-center gap-1.5"><Cpu className="w-4 h-4 text-cyan-400" /> Offline PWA</span>
+            <span className="flex items-center gap-1.5"><Compass className="w-4 h-4 text-purple-400" /> Spatial Engine</span>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors"
+          >
+            Enter Workspace →
+          </button>
+        </div>
       </div>
     </div>
   );

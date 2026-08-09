@@ -2,156 +2,134 @@ import React from 'react';
 import { useSpace } from '../../context/SpaceContext';
 import { 
   Sparkles, 
-  Cloud, 
-  CloudOff, 
+  User, 
+  LogOut, 
+  Volume2, 
+  VolumeX, 
+  Compass, 
   RefreshCw, 
-  Download, 
-  PanelLeft, 
-  Search,
-  Plus,
-  Volume2,
-  VolumeX,
-  UserCheck,
-  LogIn,
-  LogOut,
-  HelpCircle
+  Download,
+  Info
 } from 'lucide-react';
 
 export const HeaderNav = ({ onOpenLanding }) => {
   const {
-    nodes,
-    links,
-    syncStatus,
-    setIsSidebarOpen,
-    setIsCommandPaletteOpen,
-    pwaPrompt,
-    triggerPwaInstall,
-    isInstalled,
-    createNode,
     currentUser,
     signInWithGoogle,
     signOutUser,
+    syncStatus,
+    autoLayout,
+    resetView,
     isAudioActive,
-    toggleAmbientAudio
+    toggleAmbientAudio,
+    pwaPrompt,
+    triggerPwaInstall,
+    isInstalled
   } = useSpace();
 
   return (
     <header className="absolute top-4 left-4 right-4 z-30 pointer-events-none flex items-center justify-between gap-4">
-      {/* Left Brand & Sidebar Trigger */}
-      <div className="pointer-events-auto flex items-center gap-3 glass-panel px-4 py-2.5 rounded-2xl">
-        <button
-          onClick={() => setIsSidebarOpen((prev) => !prev)}
-          className="p-1.5 rounded-xl hover:bg-white/10 text-slate-300 transition-colors"
-          title="Toggle index drawer"
-        >
-          <PanelLeft className="w-4 h-4" />
-        </button>
-
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center shadow-glow-cyan">
-            <Sparkles className="w-4 h-4 text-white animate-spin-slow" />
-          </div>
-          <div>
-            <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
-              Nebula
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-                v2.2
-              </span>
-            </h1>
-            <p className="text-[11px] text-slate-400 font-medium">Spatial Thought Engine</p>
-          </div>
+      {/* Brand & Logo Badge */}
+      <div className="pointer-events-auto flex items-center gap-3 px-4 py-2.5 rounded-2xl glass-panel border border-white/10 shadow-2xl">
+        <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center shadow-glow-cyan">
+          <Sparkles className="w-4 h-4 text-white" />
         </div>
-      </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="font-black text-sm tracking-wide text-white">NEBULA</h1>
+            <span className="px-1.5 py-0.2 text-[9px] font-bold rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              v3.0
+            </span>
+          </div>
+          <p className="text-[10px] text-slate-400 font-medium">Spatial Intelligence Engine</p>
+        </div>
 
-      {/* Middle Quick Actions & Search trigger */}
-      <div className="pointer-events-auto hidden md:flex items-center gap-2 glass-panel px-3 py-1.5 rounded-2xl">
-        <button
-          onClick={() => setIsCommandPaletteOpen(true)}
-          className="flex items-center gap-3 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:border-cyan-500/40 text-slate-300 text-xs transition-all"
-        >
-          <Search className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Search thoughts & tags...</span>
-          <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-black/40 text-slate-400 border border-white/10">
-            ⌘K
-          </kbd>
-        </button>
-
-        <div className="h-4 w-px bg-white/10 my-auto" />
-
-        <button
-          onClick={() => createNode(null, null, 'New Thought', 'cyan')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/20 border border-cyan-500/30 hover:bg-cyan-500/30 text-cyan-300 text-xs font-medium transition-all"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Add Thought</span>
-        </button>
-      </div>
-
-      {/* Right User & Sound & Sync Controls */}
-      <div className="pointer-events-auto flex items-center gap-2.5 glass-panel px-3.5 py-2 rounded-2xl">
-        {/* Landing Page Showcase Re-open Button */}
         <button
           onClick={onOpenLanding}
-          className="p-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 transition-colors flex items-center gap-1 text-xs"
-          title="Intro Landing Page Showcase"
+          className="ml-2 p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-cyan-300 transition-colors"
+          title="Open Showcase & Templates"
         >
-          <HelpCircle className="w-4 h-4 text-purple-400" />
-          <span className="hidden lg:inline text-[11px] font-medium">Landing</span>
+          <Info className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Center Controls Dock */}
+      <div className="pointer-events-auto hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl glass-panel border border-white/10 shadow-2xl">
+        <button
+          onClick={autoLayout}
+          className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-200 transition-colors flex items-center gap-1.5"
+          title="Auto Cluster Orbital Layout"
+        >
+          <RefreshCw className="w-3.5 h-3.5 text-purple-400" />
+          <span>Auto Cluster</span>
         </button>
 
-        {/* Ambient Deep Focus Audio Toggle */}
+        <button
+          onClick={resetView}
+          className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-200 transition-colors flex items-center gap-1.5"
+          title="Reset Camera Center"
+        >
+          <Compass className="w-3.5 h-3.5 text-cyan-400" />
+          <span>Reset Camera</span>
+        </button>
+
+        <div className="h-4 w-px bg-white/10 mx-1" />
+
         <button
           onClick={toggleAmbientAudio}
-          className={`p-1.5 rounded-xl border transition-all flex items-center gap-1.5 text-xs ${
+          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 ${
             isAudioActive
-              ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 shadow-glow-purple'
-              : 'bg-white/5 text-slate-400 border-white/10 hover:bg-white/10'
+              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-glow-cyan'
+              : 'bg-white/5 text-slate-300 hover:bg-white/10'
           }`}
-          title={isAudioActive ? 'Mute Deep Focus Drone' : 'Enable 432Hz Ambient Focus Audio'}
+          title="Toggle 432Hz Ambient Focus Drone"
         >
-          {isAudioActive ? <Volume2 className="w-4 h-4 text-purple-400 animate-pulse" /> : <VolumeX className="w-4 h-4" />}
-          <span className="hidden lg:inline text-[11px] font-medium">
-            {isAudioActive ? 'Focus Audio On' : 'Ambient Off'}
-          </span>
+          {isAudioActive ? <Volume2 className="w-3.5 h-3.5 text-cyan-400" /> : <VolumeX className="w-3.5 h-3.5 text-slate-400" />}
+          <span>432Hz Audio</span>
         </button>
+      </div>
+
+      {/* Right User & PWA Install Controls */}
+      <div className="pointer-events-auto flex items-center gap-2">
+        {/* PWA Install Button */}
+        {pwaPrompt && !isInstalled && (
+          <button
+            onClick={triggerPwaInstall}
+            className="px-3 py-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs font-bold shadow-lg hover:scale-105 transition-all flex items-center gap-1.5"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Install App</span>
+          </button>
+        )}
 
         {/* Sync Status Badge */}
-        <div className="flex items-center gap-1.5 text-xs font-medium">
-          {syncStatus === 'synced' && (
-            <span className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-xl">
-              <Cloud className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Synced</span>
-            </span>
-          )}
-          {syncStatus === 'syncing' && (
-            <span className="flex items-center gap-1.5 text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-xl">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-              <span className="hidden sm:inline">Syncing...</span>
-            </span>
-          )}
-          {syncStatus === 'offline' && (
-            <span className="flex items-center gap-1.5 text-slate-400 bg-slate-500/10 border border-slate-500/20 px-2.5 py-1 rounded-xl">
-              <CloudOff className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Local Cache</span>
-            </span>
-          )}
+        <div className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-2xl glass-panel border border-white/10 text-xs font-semibold text-slate-300">
+          <span
+            className={`w-2 h-2 rounded-full ${
+              syncStatus === 'synced'
+                ? 'bg-emerald-400 shadow-glow-emerald'
+                : syncStatus === 'syncing'
+                ? 'bg-amber-400 animate-ping'
+                : 'bg-slate-500'
+            }`}
+          />
+          <span className="capitalize">{syncStatus}</span>
         </div>
 
-        {/* User Auth Profile / Google Login */}
+        {/* Google Authentication */}
         {currentUser ? (
-          <div className="flex items-center gap-2 border-l border-white/10 pl-2">
-            {currentUser.photoURL ? (
-              <img
-                src={currentUser.photoURL}
-                alt={currentUser.displayName || 'User'}
-                className="w-6 h-6 rounded-full border border-cyan-400/50"
-              />
-            ) : (
-              <UserCheck className="w-4 h-4 text-cyan-400" />
-            )}
+          <div className="flex items-center gap-2 p-1.5 rounded-2xl glass-panel border border-white/10">
+            <img
+              src={currentUser.photoURL || 'https://via.placeholder.com/32'}
+              alt={currentUser.displayName || 'User'}
+              className="w-7 h-7 rounded-xl border border-white/20"
+            />
+            <span className="text-xs font-semibold text-slate-200 hidden lg:inline max-w-[120px] truncate">
+              {currentUser.displayName || currentUser.email}
+            </span>
             <button
               onClick={signOutUser}
-              className="p-1 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors"
+              className="p-1.5 rounded-xl hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition-colors"
               title="Sign Out"
             >
               <LogOut className="w-3.5 h-3.5" />
@@ -159,23 +137,11 @@ export const HeaderNav = ({ onOpenLanding }) => {
           </div>
         ) : (
           <button
-            onClick={() => signInWithGoogle().catch(console.error)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 text-xs font-medium transition-all"
-            title="Sign in with Google to sync across devices"
+            onClick={signInWithGoogle}
+            className="px-3.5 py-2 rounded-2xl glass-panel border border-white/15 text-xs font-bold text-slate-100 hover:bg-white/10 transition-all flex items-center gap-1.5"
           >
-            <LogIn className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="hidden sm:inline">Google Sync</span>
-          </button>
-        )}
-
-        {/* PWA Install Prompt Button */}
-        {pwaPrompt && !isInstalled && (
-          <button
-            onClick={triggerPwaInstall}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold shadow-glow-purple transition-all"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Install</span>
+            <User className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Sign In</span>
           </button>
         )}
       </div>

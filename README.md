@@ -1,54 +1,56 @@
-# 🌌 Nebula — Cloud-Synced Infinite Spatial Workspace
+# 🌌 Nebula v3.0 — The Spatial Intelligence Engine
 
-**Nebula** is a cloud-synced, infinite-canvas Progressive Web App (PWA) engineered for spatial thought management. Designed for strategic thinkers mapping out complex ideas, Nebula releases thoughts from rigid linear lists into a fluid, 60FPS digital canvas with organic tag tethering, custom canvas physics, interactive task lists, and deep focus audio soundscapes.
+**Nebula** is a cloud-synced, 60FPS infinite spatial workspace engineered for high-value thought mapping, system architecture, and strategic planning. Designed for solo operators and strategic leaders who need more than 1-dimensional vertical documents, Nebula releases thoughts into an unbound 2D spatial canvas with organic tag tethering, custom canvas physics, interactive task lists, and deep focus audio soundscapes.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-v2.3.5--unified-purple.svg)
+![Version](https://img.shields.io/badge/version-v3.0--official-purple.svg)
 ![PWA](https://img.shields.io/badge/PWA-Ready-emerald.svg)
 
 ---
 
-## 🌐 Live Production Application
+## 🌐 Official Production Application
 
-Access the official live production release of Nebula here:
+Access the official production release of Nebula:
 
 👉 **[https://nebula-app-kappa.vercel.app](https://nebula-app-kappa.vercel.app)**
 
 ---
 
-## ✨ Release Notes (v2.3+ Unified Release)
+## 🌟 Master Features (v3.0 Release)
 
-### 🔗 Tether System & WYSIWYG Editor
-- **WYSIWYG Tether Editor Popover**: Click any tether line or pill on the canvas to open a floating Notion-style editor bar with real-time text label renaming and delete actions.
-- **Tether Color Accents**: Select custom tether accent colors (Cyan, Purple, Emerald, Amber, Rose, Indigo) to visually categorize connections across space.
-- **Smooth Anchor Dragging**: Drag from any card's **(+) anchor handle** to draw cyan draft lines with automatic snap attachment.
+### 🌌 Unbound Spatial Canvas & Physics
+- **60FPS Infinite Viewport**: Exponential camera zoom (`0.15x` to `4.5x`) and translation with smooth dpr Retina scaling.
+- **Pythagorean Gravity Nexus**: 1,000+ floating celestial particles connected into geometric triangle networks reacting to real-time cursor gravity.
+- **Infinite Edge-to-Edge Wrapping**: Dynamic particle projection wrapping guarantees 100% viewport coverage across the entire canvas with zero gaps at any zoom level.
+- **Cluster Orbit Constellations**: Physics auto-layout clustering scattered cards into circular orbital constellations grouped around primary hubs.
 
-### 📝 Rich Text Formatting & Task Checkboxes
-- **Interactive Checkboxes & Task Lists**: Create `- [ ] Task item` or `- [x] Completed task item` lists. Clicking checkboxes directly on cards toggles completion state in real time!
-- **Bullet Lists**: Clean bullet points (`- Item` or `* Item`) with glowing accent dots.
+### 🔗 Tethering & Associations Engine
+- **Multi-Anchor Drag Tethering**: Drag from any card's 4 perimeter anchor handles (`+`) to draw glowing cubic Bezier connection tethers.
+- **Organic #Tag Tethers**: Automatic detection of matching `#hashtags` generating glowing dotted tethers with tag badge pills.
+- **Notion-Style WYSIWYG Tether Editor**: Click any tether line on the canvas to open a floating editor popover bar for live text label editing, color swatch selection (Cyan, Purple, Emerald, Amber, Rose, Indigo), and deletion.
+- **Inline Double-Click Renaming**: Double-click any tether line or pill on the canvas for instant label renaming.
+
+### 📝 Rich Text Formatting & Interactive Task Lists
+- **Interactive Checkboxes**: Create `- [ ] Task item` or `- [x] Completed item` lists. Click checkboxes directly on thought cards to toggle completion states live!
+- **Bullet Lists**: Bullet items (`- Item` or `* Item`) with glowing cyan accent dots.
 - **Headings & Inline Formatting**: H1 (`# Title`), H2 (`## Subtitle`), **Bold**, *Italic*, ~~Strikethrough~~, <u>Underline</u>, <mark>Highlight</mark>, and `[clickable hyperlinks](url)`.
 
-### 🌌 Edge-to-Edge Infinite Pythagorean Gravity Nexus
-- **Infinite Particle Wrapping**: Background 1,000+ particle gravity network projects dynamically across camera viewport bounds `[-1000, +1000]`, providing 100% edge-to-edge coverage with zero cutoff gaps at any zoom level (`0.15x` to `4.5x`).
-
-### 🔍 Smart Scale Clamping & Compact Card Collapse
-- **Macro Canvas View**: When zooming out (`< 0.45x`), glass cards automatically collapse into sleek spatial summary pills showing title, status, and tag chips, preventing text spillover.
-
-### 🏷️ Ultimate Tag Experience
-- **Organic #Tag Tethers**: Automatic detection of matching `#hashtags` creating glowing dotted tethers with tag badge pills.
-- **Hashtag Autocomplete**: Real-time tag suggestions when typing `#` in notes or command search bar.
+### 🎧 Deep Focus Atmosphere & Cloud Sync
+- **Procedural 432Hz Ambient Focus Synthesizer**: Built-in Web Audio API synthesizer producing sub-bass focus drones and soft pink noise waves.
+- **Firebase Firestore Live Sync**: Bidirectional real-time persistence (`onSnapshot`) with debounced position write-backs.
+- **Offline PWA Service Worker**: Precached static assets and Workbox service worker.
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Build Tool**: [Vite](https://vitejs.dev/)
-- **Frontend Engine**: [React 18](https://reactjs.org/)
+- **Build Environment**: [Vite](https://vitejs.dev/)
+- **Frontend Architecture**: [React 18](https://reactjs.org/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **Canvas Rendering**: HTML5 Canvas API (Spatial Binned 60FPS Pipeline)
-- **Backend & Database**: Firebase Firestore & Auth
-- **PWA Capabilities**: `vite-plugin-pwa` with Workbox Service Worker
-- **Deployment**: Vercel
+- **Graphics Pipeline**: HTML5 Canvas API (Spatial Grid Binned 60FPS Render Pipeline)
+- **Backend Infrastructure**: Firebase Firestore & Auth
+- **PWA Integration**: `vite-plugin-pwa` with Workbox Service Worker
+- **Deployment Platform**: Vercel
 
 ---
 
@@ -82,6 +84,14 @@ Access the official live production release of Nebula here:
    ```bash
    npm run build
    ```
+
+---
+
+## 🔒 Security & Git Hygiene
+
+- `.env` secret keys are kept strictly offline and listed in `.gitignore`.
+- Heavy build outputs (`dist/`, `node_modules/`) and Vercel cache (`.vercel/`) are ignored.
+- `.env.example` serves as the safe template for environment variables.
 
 ---
 
