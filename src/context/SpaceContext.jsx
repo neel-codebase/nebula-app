@@ -15,7 +15,7 @@ const SpaceContext = createContext(null);
 const INITIAL_NODES = {
   'node-1': {
     id: 'node-1',
-    title: '🌌 Welcome to Nebula',
+    title: '🌌 Welcome to Nebula v3.0',
     content: 'Cloud-synced infinite spatial workspace for strategic thought mapping.\n\n- [x] Drag cards around the canvas\n- [ ] Add #tags like #canvas to auto-tether notes\n- [ ] Drag (+) handles to draw custom tethers',
     x: -240,
     y: -20,
@@ -62,30 +62,38 @@ const INITIAL_LINKS = [
   { id: 'link-2', sourceId: 'node-1', targetId: 'node-3', label: 'shares #canvas', color: 'emerald' }
 ];
 
+const getSafeInitialNodes = () => {
+  try {
+    const saved = localStorage.getItem('nebula_nodes');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && Object.keys(parsed).length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.warn('LocalStorage nodes parse error, using fallback:', e);
+  }
+  return INITIAL_NODES;
+};
+
+const getSafeInitialLinks = () => {
+  try {
+    const saved = localStorage.getItem('nebula_links');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    console.warn('LocalStorage links parse error, using fallback:', e);
+  }
+  return INITIAL_LINKS;
+};
+
 export const SpaceProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
-
-  const [nodes, setNodes] = useState(() => {
-    const saved = localStorage.getItem('nebula_nodes');
-    if (!saved) return INITIAL_NODES;
-    try {
-      const parsed = JSON.parse(saved);
-      return Object.keys(parsed).length > 0 ? parsed : INITIAL_NODES;
-    } catch (e) {
-      return INITIAL_NODES;
-    }
-  });
-
-  const [links, setLinks] = useState(() => {
-    const saved = localStorage.getItem('nebula_links');
-    if (!saved) return INITIAL_LINKS;
-    try {
-      const parsed = JSON.parse(saved);
-      return parsed.length > 0 ? parsed : INITIAL_LINKS;
-    } catch (e) {
-      return INITIAL_LINKS;
-    }
-  });
+  const [nodes, setNodes] = useState(getSafeInitialNodes);
+  const [links, setLinks] = useState(getSafeInitialLinks);
 
   const [camera, setCamera] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 0.95 });
   const [selection, setSelection] = useState({ nodeIds: [], linkId: null });
@@ -112,17 +120,21 @@ export const SpaceProvider = ({ children }) => {
   }, []);
 
   const autoTagTethers = useMemo(() => {
-    return computeTagTethers(nodes);
+    return computeTagTethers(nodes || {});
   }, [nodes]);
 
   const allCombinedLinks = useMemo(() => {
-    return [...links, ...autoTagTethers];
+    return [...(links || []), ...(autoTagTethers || [])];
   }, [links, autoTagTethers]);
 
   useEffect(() => {
     try {
-      localStorage.setItem('nebula_nodes', JSON.stringify(nodes));
-      localStorage.setItem('nebula_links', JSON.stringify(links));
+      if (nodes && typeof nodes === 'object') {
+        localStorage.setItem('nebula_nodes', JSON.stringify(nodes));
+      }
+      if (links && Array.isArray(links)) {
+        localStorage.setItem('nebula_links', JSON.stringify(links));
+      }
     } catch (e) {
       console.warn('LocalStorage save error', e);
     }
@@ -164,7 +176,7 @@ export const SpaceProvider = ({ children }) => {
           snapshot.docs.forEach((doc) => {
             cloudNodes[doc.id] = { id: doc.id, ...doc.data() };
           });
-          setNodes((prev) => ({ ...prev, ...cloudNodes }));
+          setNodes((prev) => ({ ...(prev || {}), ...cloudNodes }));
         } else if (!currentUser) {
           Object.values(INITIAL_NODES).forEach((node) => {
             setDoc(doc(db, 'nebula_thoughts', node.id), node).catch(console.error);
@@ -200,7 +212,7 @@ export const SpaceProvider = ({ children }) => {
   }, [currentUser]);
 
   const syncNodeToCloud = useCallback((node, immediate = false) => {
-    if (!db) return;
+    if (!db || !node) return;
     setSyncStatus('syncing');
     const collectionName = currentUser ? `users/${currentUser.uid}/nebula_thoughts` : 'nebula_thoughts';
 
@@ -223,7 +235,7 @@ export const SpaceProvider = ({ children }) => {
   }, [currentUser]);
 
   const syncLinkToCloud = useCallback((link) => {
-    if (!db) return;
+    if (!db || !link) return;
     setSyncStatus('syncing');
     const linksCollectionName = currentUser ? `users/${currentUser.uid}/nebula_links` : 'nebula_links';
     setDoc(doc(db, linksCollectionName, link.id), link)
@@ -250,7 +262,7 @@ export const SpaceProvider = ({ children }) => {
       updatedAt: Date.now()
     };
 
-    setNodes((prev) => ({ ...prev, [id]: newNode }));
+    setNodes((prev) => ({ ...(prev || {}), [id]: newNode }));
     setSelection({ nodeIds: [id], linkId: null });
     syncNodeToCloud(newNode, true);
     ambientAudio.playNodeCreatedSound();
@@ -259,8 +271,9 @@ export const SpaceProvider = ({ children }) => {
 
   const updateNode = useCallback((id, updates, immediateSync = false) => {
     setNodes((prev) => {
-      const existing = prev[id];
-      if (!existing) return prev;
+      const current = prev || {};
+      const existing = current[id];
+      if (!existing) return current;
       const updated = { ...existing, ...updates, updatedAt: Date.now() };
       
       if (updates.title !== undefined || updates.content !== undefined) {
@@ -273,13 +286,13 @@ export const SpaceProvider = ({ children }) => {
       }
 
       syncNodeToCloud(updated, immediateSync);
-      return { ...prev, [id]: updated };
+      return { ...current, [id]: updated };
     });
   }, [syncNodeToCloud]);
 
   const moveNodes = useCallback((nodeIds = [], deltaX = 0, deltaY = 0) => {
     setNodes((prev) => {
-      const next = { ...prev };
+      const next = { ...(prev || {}) };
       nodeIds.forEach((id) => {
         if (next[id]) {
           const updated = {
@@ -298,12 +311,12 @@ export const SpaceProvider = ({ children }) => {
 
   const deleteNode = useCallback((id) => {
     setNodes((prev) => {
-      const next = { ...prev };
+      const next = { ...(prev || {}) };
       delete next[id];
       return next;
     });
-    setLinks((prev) => prev.filter((l) => l.sourceId !== id && l.targetId !== id));
-    setSelection((prev) => ({ ...prev, nodeIds: prev.nodeIds.filter((nid) => nid !== id) }));
+    setLinks((prev) => (prev || []).filter((l) => l.sourceId !== id && l.targetId !== id));
+    setSelection((prev) => ({ ...prev, nodeIds: (prev.nodeIds || []).filter((nid) => nid !== id) }));
     
     if (db) {
       const collectionName = currentUser ? `users/${currentUser.uid}/nebula_thoughts` : 'nebula_thoughts';
@@ -314,19 +327,20 @@ export const SpaceProvider = ({ children }) => {
 
   const createLink = useCallback((sourceId, targetId, label = 'connects to', color = 'cyan') => {
     if (sourceId === targetId) return;
-    const existing = links.find((l) => (l.sourceId === sourceId && l.targetId === targetId) || (l.sourceId === targetId && l.targetId === sourceId));
+    const currentLinks = links || [];
+    const existing = currentLinks.find((l) => (l.sourceId === sourceId && l.targetId === targetId) || (l.sourceId === targetId && l.targetId === sourceId));
     if (existing) return;
 
     const id = `link-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const newLink = { id, sourceId, targetId, label, color };
-    setLinks((prev) => [...prev, newLink]);
+    setLinks((prev) => [...(prev || []), newLink]);
     syncLinkToCloud(newLink);
     ambientAudio.playTetherSound();
   }, [links, syncLinkToCloud]);
 
   const updateLink = useCallback((linkId, updates) => {
     setLinks((prev) => {
-      return prev.map((l) => {
+      return (prev || []).map((l) => {
         if (l.id === linkId) {
           const updated = { ...l, ...updates };
           syncLinkToCloud(updated);
@@ -338,7 +352,7 @@ export const SpaceProvider = ({ children }) => {
   }, [syncLinkToCloud]);
 
   const deleteLink = useCallback((linkId) => {
-    setLinks((prev) => prev.filter((l) => l.id !== linkId));
+    setLinks((prev) => (prev || []).filter((l) => l.id !== linkId));
     setSelection((prev) => ({ ...prev, linkId: null }));
     if (db) {
       const linksCollectionName = currentUser ? `users/${currentUser.uid}/nebula_links` : 'nebula_links';
@@ -348,12 +362,13 @@ export const SpaceProvider = ({ children }) => {
   }, [currentUser]);
 
   const autoLayout = useCallback(() => {
-    const allNodeKeys = Object.keys(nodes);
-    const unpinnedKeys = allNodeKeys.filter((k) => !nodes[k].pinned);
+    const currentNodes = nodes || {};
+    const allNodeKeys = Object.keys(currentNodes);
+    const unpinnedKeys = allNodeKeys.filter((k) => !currentNodes[k]?.pinned);
 
     if (unpinnedKeys.length === 0) return;
 
-    const updated = { ...nodes };
+    const updated = { ...currentNodes };
     const radius = Math.max(380, unpinnedKeys.length * 95);
     const angleStep = (2 * Math.PI) / unpinnedKeys.length;
 
@@ -379,7 +394,7 @@ export const SpaceProvider = ({ children }) => {
   }, []);
 
   const fitView = useCallback(() => {
-    const nodeArray = Object.values(nodes);
+    const nodeArray = Object.values(nodes || {});
     if (nodeArray.length === 0) return resetView();
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -423,18 +438,28 @@ export const SpaceProvider = ({ children }) => {
     }
   }, [pwaPrompt]);
 
+  const resetWorkspaceState = useCallback(() => {
+    try {
+      localStorage.removeItem('nebula_nodes');
+      localStorage.removeItem('nebula_links');
+    } catch (e) {}
+    setNodes(INITIAL_NODES);
+    setLinks(INITIAL_LINKS);
+    setCamera({ x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 0.95 });
+  }, []);
+
   return (
     <SpaceContext.Provider
       value={{
         currentUser,
         signInWithGoogle,
         signOutUser,
-        nodes,
+        nodes: nodes || {},
         links: allCombinedLinks,
-        manualLinks: links,
+        manualLinks: links || [],
         camera,
         setCamera,
-        selection,
+        selection: selection || { nodeIds: [], linkId: null },
         setSelection,
         activeTool,
         setActiveTool,
@@ -463,7 +488,8 @@ export const SpaceProvider = ({ children }) => {
         deleteLink,
         autoLayout,
         resetView,
-        fitView
+        fitView,
+        resetWorkspaceState
       }}
     >
       {children}
