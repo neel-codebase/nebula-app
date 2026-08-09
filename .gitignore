@@ -27,4 +27,6 @@ yarn-error.log*
 .env*
 .tmp.drivedownload/
 .tmp.driveupload/
+Nebula-Brain/
+
 
