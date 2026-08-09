@@ -8,7 +8,9 @@ import {
   Heading1, 
   Heading2, 
   Link, 
-  Tag 
+  Tag,
+  List,
+  CheckSquare
 } from 'lucide-react';
 
 export const FormatToolbar = ({ textareaRef, value, onChange }) => {
@@ -25,7 +27,6 @@ export const FormatToolbar = ({ textareaRef, value, onChange }) => {
 
     onChange(newValue);
 
-    // Restore focus and selection
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(
@@ -70,6 +71,26 @@ export const FormatToolbar = ({ textareaRef, value, onChange }) => {
       >
         <Heading2 className="w-3.5 h-3.5" />
         H2
+      </button>
+
+      <div className="h-4 w-px bg-white/10 mx-0.5" />
+
+      <button
+        type="button"
+        onClick={() => insertFormatting('- ')}
+        className="p-1.5 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+        title="Bullet List (- item)"
+      >
+        <List className="w-3.5 h-3.5" />
+      </button>
+
+      <button
+        type="button"
+        onClick={() => insertFormatting('- [ ] ')}
+        className="p-1.5 text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition-colors"
+        title="Checkbox Task List (- [ ] task)"
+      >
+        <CheckSquare className="w-3.5 h-3.5" />
       </button>
 
       <div className="h-4 w-px bg-white/10 mx-0.5" />

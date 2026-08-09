@@ -1,71 +1,66 @@
-import React, { useState, useEffect } from 'react';
-import { SpaceProvider } from './context/SpaceContext';
+import React, { useState } from 'react';
+import { SpaceProvider, useSpace } from './context/SpaceContext';
 import { CanvasEngine } from './components/canvas/CanvasEngine';
 import { ThoughtNodeOverlay } from './components/ui/ThoughtNodeOverlay';
 import { HeaderNav } from './components/ui/HeaderNav';
 import { CommandBar } from './components/ui/CommandBar';
 import { CommandPalette } from './components/ui/CommandPalette';
-import { Sidebar } from './components/ui/Sidebar';
 import { NodeModal } from './components/ui/NodeModal';
+import { Sidebar } from './components/ui/Sidebar';
 import { Minimap } from './components/ui/Minimap';
 import { FileDropZone } from './components/ui/FileDropZone';
 import { LandingPage } from './components/landing/LandingPage';
+import { TetherEditorPopover } from './components/ui/TetherEditorPopover';
 
-function AppContent() {
-  const [showLanding, setShowLanding] = useState(() => {
-    // Show landing page on first load if not visited
-    const visited = localStorage.getItem('nebula_visited');
-    return !visited;
-  });
+const SpaceViewport = () => {
+  const { setSelection } = useSpace();
+  const [showLanding, setShowLanding] = useState(false);
 
-  const handleEnterWorkspace = () => {
-    localStorage.setItem('nebula_visited', 'true');
-    setShowLanding(false);
+  const handleCanvasClick = () => {
+    setSelection({ nodeIds: [], linkId: null });
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-space-950 select-none font-sans">
-      {/* Landing Showcase Overlay */}
-      {showLanding ? (
-        <LandingPage onEnterWorkspace={handleEnterWorkspace} />
-      ) : (
-        <>
-          {/* 1. 1500-Particle High-Density Pythagorean Gravity Canvas Engine */}
-          <CanvasEngine />
+    <FileDropZone>
+      <div className="relative w-screen h-screen overflow-hidden bg-slate-950 text-slate-100 font-sans select-none antialiased">
+        {/* Infinite 60FPS Spatial Canvas Engine */}
+        <CanvasEngine onCanvasClick={handleCanvasClick} />
 
-          {/* 2. Spatial Thought Node Cards (Synced HTML Overlay) */}
-          <ThoughtNodeOverlay />
+        {/* HTML Glass Card Nodes Layer */}
+        <ThoughtNodeOverlay />
 
-          {/* 3. Top Glass Header Navigation */}
-          <HeaderNav onOpenLanding={() => setShowLanding(true)} />
+        {/* Floating WYSIWYG Tether Editor Popover */}
+        <TetherEditorPopover />
 
-          {/* 4. Floating Command Dock Toolbar */}
-          <CommandBar />
+        {/* Top Header Navigation */}
+        <HeaderNav onOpenLanding={() => setShowLanding(true)} />
 
-          {/* 5. Command Palette Modal (Cmd+K) */}
-          <CommandPalette />
+        {/* Minimap Radar Navigation */}
+        <Minimap />
 
-          {/* 6. Sidebar Index Panel */}
-          <Sidebar />
+        {/* Bottom Command Dock */}
+        <CommandBar />
 
-          {/* 7. Node Editor Modal */}
-          <NodeModal />
+        {/* Slide-out Sidebar Drawer */}
+        <Sidebar />
 
-          {/* 8. Viewport Minimap */}
-          <Minimap />
+        {/* Spotlight Command Palette (Cmd+K) */}
+        <CommandPalette />
 
-          {/* 9. Drag & Drop File Import Zone */}
-          <FileDropZone />
-        </>
-      )}
-    </div>
+        {/* Detailed Thought Editor Modal */}
+        <NodeModal />
+
+        {/* Introductory Landing Page Showcase */}
+        {showLanding && <LandingPage onClose={() => setShowLanding(false)} />}
+      </div>
+    </FileDropZone>
   );
-}
+};
 
 export default function App() {
   return (
     <SpaceProvider>
-      <AppContent />
+      <SpaceViewport />
     </SpaceProvider>
   );
 }

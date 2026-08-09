@@ -54,21 +54,19 @@ export const CanvasEngine = ({ onCanvasClick }) => {
   const startPanRef = useRef({ x: 0, y: 0 });
   const mouseWorldRef = useRef({ x: 0, y: 0 });
 
-  // Marquee Selection Box Ref
-  const marqueeRef = useRef(null); // { startWorldX, startWorldY, currentWorldX, currentWorldY }
-
+  const marqueeRef = useRef(null);
   const animFrameRef = useRef(null);
   const particlesRef = useRef([]);
 
-  // Initialize Particles
+  // Initialize 1200 Particles
   useEffect(() => {
     const particles = [];
     const count = 1000;
     for (let i = 0; i < count; i++) {
       particles.push({
         id: i,
-        x: (Math.random() - 0.5) * 4500,
-        y: (Math.random() - 0.5) * 4500,
+        x: (Math.random() - 0.5) * 5000,
+        y: (Math.random() - 0.5) * 5000,
         vx: (Math.random() - 0.5) * 0.5,
         vy: (Math.random() - 0.5) * 0.5,
         radius: Math.random() * 2.2 + 0.8,
@@ -78,7 +76,6 @@ export const CanvasEngine = ({ onCanvasClick }) => {
     particlesRef.current = particles;
   }, []);
 
-  // Keyboard shortcut listener for deleting selected link
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.key === 'Delete' || e.key === 'Backspace') && selection.linkId) {
@@ -119,7 +116,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       ctx.save();
       ctx.scale(dpr, dpr);
 
-      // Deep Space background
+      // Background
       ctx.fillStyle = '#030712';
       ctx.fillRect(0, 0, width, height);
 
@@ -128,12 +125,12 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       ctx.translate(camera.x, camera.y);
       ctx.scale(camera.zoom, camera.zoom);
 
-      // 1. Grid Background
+      // 1. Edge-to-Edge Dynamic Infinite Grid
       const gridSize = 80;
-      const startX = Math.floor((-camera.x / camera.zoom) / gridSize) * gridSize - gridSize;
-      const endX = Math.ceil((width - camera.x) / camera.zoom / gridSize) * gridSize + gridSize;
-      const startY = Math.floor((-camera.y / camera.zoom) / gridSize) * gridSize - gridSize;
-      const endY = Math.ceil((height - camera.y) / camera.zoom / gridSize) * gridSize + gridSize;
+      const startX = Math.floor((-camera.x / camera.zoom) / gridSize) * gridSize - gridSize * 2;
+      const endX = Math.ceil((width - camera.x) / camera.zoom / gridSize) * gridSize + gridSize * 2;
+      const startY = Math.floor((-camera.y / camera.zoom) / gridSize) * gridSize - gridSize * 2;
+      const endY = Math.ceil((height - camera.y) / camera.zoom / gridSize) * gridSize + gridSize * 2;
 
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
       ctx.lineWidth = 1 / camera.zoom;
@@ -148,18 +145,25 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       }
       ctx.stroke();
 
-      // 2. High-Performance Spatial Binned Pythagorean Gravity Nexus
+      // 2. Edge-to-Edge Infinite Pythagorean Gravity Nexus
       const particles = particlesRef.current;
       const mouseWorld = mouseWorldRef.current;
       const cellSize = 160;
       const gridBins = {};
 
-      const viewMinX = -camera.x / camera.zoom - 200;
-      const viewMaxX = (width - camera.x) / camera.zoom + 200;
-      const viewMinY = -camera.y / camera.zoom - 200;
-      const viewMaxY = (height - camera.y) / camera.zoom + 200;
+      const viewMinX = -camera.x / camera.zoom - 1000;
+      const viewMaxX = (width - camera.x) / camera.zoom + 1000;
+      const viewMinY = -camera.y / camera.zoom - 1000;
+      const viewMaxY = (height - camera.y) / camera.zoom + 1000;
 
       particles.forEach((p) => {
+        // Wrap particles around viewport bounds for infinite edge-to-edge coverage
+        if (p.x < viewMinX) p.x = viewMaxX;
+        if (p.x > viewMaxX) p.x = viewMinX;
+        if (p.y < viewMinY) p.y = viewMaxY;
+        if (p.y > viewMaxY) p.y = viewMinY;
+
+        // Cursor gravity pull
         const dxMouse = mouseWorld.x - p.x;
         const dyMouse = mouseWorld.y - p.y;
         const distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
@@ -176,20 +180,19 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         p.x += p.vx;
         p.y += p.vy;
 
-        if (p.x >= viewMinX && p.x <= viewMaxX && p.y >= viewMinY && p.y <= viewMaxY) {
-          ctx.fillStyle = `rgba(6, 182, 212, ${p.alpha})`;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius / Math.max(camera.zoom, 0.4), 0, Math.PI * 2);
-          ctx.fill();
+        ctx.fillStyle = `rgba(6, 182, 212, ${p.alpha})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius / Math.max(camera.zoom, 0.4), 0, Math.PI * 2);
+        ctx.fill();
 
-          const cx = Math.floor(p.x / cellSize);
-          const cy = Math.floor(p.y / cellSize);
-          const key = `${cx}:${cy}`;
-          if (!gridBins[key]) gridBins[key] = [];
-          gridBins[key].push(p);
-        }
+        const cx = Math.floor(p.x / cellSize);
+        const cy = Math.floor(p.y / cellSize);
+        const key = `${cx}:${cy}`;
+        if (!gridBins[key]) gridBins[key] = [];
+        gridBins[key].push(p);
       });
 
+      // Pythagorean Nexus Lines
       const processedPairs = new Set();
       ctx.lineWidth = 0.9 / camera.zoom;
 
@@ -227,7 +230,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         }
       });
 
-      // 3. Links & Tethers
+      // 3. Links & Tethers with Color Accents
       links.forEach((link) => {
         const sourceNode = nodes[link.sourceId];
         const targetNode = nodes[link.targetId];
@@ -265,7 +268,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         ctx.stroke();
         ctx.restore();
 
-        // Impulse particle
+        // Flowing Energy Impulse Dot
         const impulseCount = isAutoTag ? 1 : 2;
         for (let i = 0; i < impulseCount; i++) {
           const progress = ((time * (isAutoTag ? 0.4 : 0.6) + i / impulseCount) % 1);
@@ -295,7 +298,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
           const pillPadding = 7;
 
           ctx.fillStyle = isSelected ? '#06b6d4' : isAutoTag ? 'rgba(3, 7, 18, 0.95)' : 'rgba(11, 15, 25, 0.95)';
-          ctx.strokeStyle = isSelected ? '#ffffff' : palette.main;
+          ctx.strokeStyle = palette.main;
           ctx.lineWidth = (isSelected ? 1.8 : 1) / camera.zoom;
           ctx.beginPath();
           ctx.roundRect(
@@ -315,7 +318,7 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         }
       });
 
-      // 4. Marquee Selection Rect (Multi-Card Box Drag)
+      // 4. Marquee Selection Box
       if (marqueeRef.current) {
         const { startWorldX, startWorldY, currentWorldX, currentWorldY } = marqueeRef.current;
         const rectX = Math.min(startWorldX, currentWorldX);
@@ -398,7 +401,6 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       if (activeTool === 'node') {
         createNode(worldPos.x, worldPos.y);
       } else {
-        // Check if user clicked a link pill to select or rename
         let clickedLink = null;
         links.forEach((link) => {
           const srcNode = nodes[link.sourceId];
@@ -415,7 +417,6 @@ export const CanvasEngine = ({ onCanvasClick }) => {
         if (clickedLink) {
           setSelection({ nodeIds: [], linkId: clickedLink.id });
         } else {
-          // Initiate Marquee Drag Selection on Canvas Background
           marqueeRef.current = {
             startWorldX: worldPos.x,
             startWorldY: worldPos.y,
@@ -449,7 +450,6 @@ export const CanvasEngine = ({ onCanvasClick }) => {
   const handleMouseUp = () => {
     if (isPanningRef.current) isPanningRef.current = false;
 
-    // Complete Marquee Drag Selection
     if (marqueeRef.current) {
       const { startWorldX, startWorldY, currentWorldX, currentWorldY } = marqueeRef.current;
       const minX = Math.min(startWorldX, currentWorldX);
@@ -457,7 +457,6 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       const minY = Math.min(startWorldY, currentWorldY);
       const maxY = Math.max(startWorldY, currentWorldY);
 
-      // Select all nodes intersecting marquee bounds (if drag area > 10px)
       if (maxX - minX > 10 && maxY - minY > 10) {
         const selectedIds = Object.values(nodes).filter((node) => {
           return (
@@ -475,18 +474,6 @@ export const CanvasEngine = ({ onCanvasClick }) => {
     }
   };
 
-  const handleDoubleClick = (e) => {
-    if (e.target === canvasRef.current && selection.linkId) {
-      const link = links.find((l) => l.id === selection.linkId);
-      if (link && !link.isAutoTag) {
-        const newLabel = prompt('Rename Tether Label:', link.label || 'relates to');
-        if (newLabel !== null) {
-          updateLink(link.id, { label: newLabel.trim() || 'relates to' });
-        }
-      }
-    }
-  };
-
   return (
     <canvas
       ref={canvasRef}
@@ -494,7 +481,6 @@ export const CanvasEngine = ({ onCanvasClick }) => {
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      onDoubleClick={handleDoubleClick}
       onContextMenu={(e) => e.preventDefault()}
       className={`absolute inset-0 block w-full h-full touch-none ${
         activeTool === 'pan' || isPanningRef.current ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'

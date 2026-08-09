@@ -38,11 +38,11 @@ export const ThoughtNodeOverlay = () => {
   const draggingNodeRef = useRef(null);
   const dragLastPosRef = useRef({ x: 0, y: 0 });
 
-  // Handle Card Drag (Single or Group Movement)
+  const isZoomedOut = camera.zoom < 0.45;
+
   const handlePointerDown = (e, node) => {
     e.stopPropagation();
 
-    // Multi-selection key modifier (Shift or Cmd/Ctrl)
     if (e.shiftKey || e.metaKey || e.ctrlKey) {
       const alreadySelected = selection.nodeIds.includes(node.id);
       const newSelected = alreadySelected
@@ -52,7 +52,6 @@ export const ThoughtNodeOverlay = () => {
       return;
     }
 
-    // If node not in active multi-selection, select it singly
     const isMulti = selection.nodeIds.length > 1 && selection.nodeIds.includes(node.id);
     const activeSelectedIds = isMulti ? selection.nodeIds : [node.id];
     setSelection({ nodeIds: activeSelectedIds, linkId: null });
@@ -74,7 +73,6 @@ export const ThoughtNodeOverlay = () => {
 
           dragLastPosRef.current = { x: currentWorldX, y: currentWorldY };
 
-          // Move all selected nodes together maintaining relative offsets
           moveNodes(activeSelectedIds, deltaX, deltaY);
         }
       };
@@ -90,7 +88,6 @@ export const ThoughtNodeOverlay = () => {
     }
   };
 
-  // Card Resizing Handle Drag
   const startResize = (e, node) => {
     e.stopPropagation();
     e.preventDefault();
@@ -119,7 +116,6 @@ export const ThoughtNodeOverlay = () => {
     window.addEventListener('pointerup', handleResizeUp);
   };
 
-  // Drag-to-Connect Manual Tethering
   const startTetherDraft = (e, sourceNodeId) => {
     e.stopPropagation();
     e.preventDefault();
@@ -193,6 +189,40 @@ export const ThoughtNodeOverlay = () => {
           return null;
         }
 
+        // Compact Collapsed Pill Card on Zoom Out (< 0.45x)
+        if (isZoomedOut) {
+          return (
+            <div
+              key={node.id}
+              onPointerDown={(e) => handlePointerDown(e, node)}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                setEditingNodeId(node.id);
+              }}
+              style={{
+                transform: `translate3d(${screenX}px, ${screenY}px, 0px)`,
+                width: `${screenWidth}px`,
+              }}
+              className={`pointer-events-auto absolute left-0 top-0 rounded-xl border p-2.5 glass-card ${colorStyle} ${
+                isSelected ? 'ring-2 ring-cyan-400 scale-105' : ''
+              } flex items-center justify-between gap-2 overflow-hidden shadow-lg cursor-pointer`}
+            >
+              <div className="flex items-center gap-2 truncate">
+                <div className={`w-2.5 h-2.5 rounded-full ${colorStyle.split(' ')[2]}`} />
+                <span className="font-bold text-xs text-white truncate">
+                  {node.title.replace(/^#+\s*/, '')}
+                </span>
+              </div>
+
+              {node.tags && node.tags.length > 0 && (
+                <span className="text-[10px] text-purple-300 font-semibold bg-purple-500/20 px-1.5 py-0.5 rounded flex-shrink-0">
+                  #{node.tags[0]}
+                </span>
+              )}
+            </div>
+          );
+        }
+
         return (
           <div
             key={node.id}
@@ -210,7 +240,7 @@ export const ThoughtNodeOverlay = () => {
               isSelected ? 'ring-2 ring-cyan-400 shadow-2xl scale-[1.01]' : 'hover:scale-[1.005]'
             }`}
           >
-            {/* Dedicated Tether Anchor UI Button */}
+            {/* Tether Anchor Handle Button */}
             <button
               onPointerDown={(e) => startTetherDraft(e, node.id)}
               className="absolute -right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-gradient-to-r from-cyan-500 to-purple-600 text-white border-2 border-slate-900 shadow-glow-cyan flex items-center justify-center opacity-80 hover:opacity-100 hover:scale-125 transition-all z-20 cursor-crosshair"
@@ -281,9 +311,12 @@ export const ThoughtNodeOverlay = () => {
               </div>
             </div>
 
-            {/* Card Content Body with Rich Text Formatting */}
+            {/* Card Body with Rich Text Formatting & Interactive Task Checkboxes */}
             <div className="mb-3 overflow-hidden text-xs">
-              <FormattedText text={node.content} />
+              <FormattedText
+                text={node.content}
+                onToggleCheckbox={(newContent) => updateNode(node.id, { content: newContent })}
+              />
             </div>
 
             {/* Tags Footer & Color Selector */}
@@ -317,7 +350,6 @@ export const ThoughtNodeOverlay = () => {
               </div>
             </div>
 
-            {/* Glowing Selection Indicator */}
             {isSelected && (
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-cyan-400 rounded-full animate-ping opacity-75" />
             )}

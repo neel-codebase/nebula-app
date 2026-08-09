@@ -1,9 +1,12 @@
 import React from 'react';
+import { CheckSquare, Square, Circle } from 'lucide-react';
 
 /**
  * Parses custom markdown & rich text tags into interactive React elements:
  * - H1: # text
  * - H2: ## text
+ * - Bullet lists: - item or * item
+ * - Checkboxes: - [ ] Task item or - [x] Completed task item
  * - Bold: **text**
  * - Italic: *text*
  * - Strikethrough: ~~text~~
@@ -12,13 +15,31 @@ import React from 'react';
  * - Hyperlinks: [label](url)
  * - Hashtags: #tag
  */
-export const FormattedText = ({ text = '', className = '' }) => {
+export const FormattedText = ({ text = '', className = '', onToggleCheckbox }) => {
   if (!text) return null;
 
   const lines = text.split('\n');
 
+  const handleCheckboxClick = (e, lineIdx, lineStr) => {
+    e.stopPropagation();
+    if (!onToggleCheckbox) return;
+
+    let updatedLine;
+    if (lineStr.startsWith('- [ ] ')) {
+      updatedLine = lineStr.replace('- [ ] ', '- [x] ');
+    } else if (lineStr.startsWith('- [x] ') || lineStr.startsWith('- [X] ')) {
+      updatedLine = lineStr.replace(/- \[[xX]\] /, '- [ ] ');
+    } else {
+      return;
+    }
+
+    const newLines = [...lines];
+    newLines[lineIdx] = updatedLine;
+    onToggleCheckbox(newLines.join('\n'));
+  };
+
   return (
-    <div className={`space-y-1 ${className}`}>
+    <div className={`space-y-1.5 ${className}`}>
       {lines.map((line, lineIdx) => {
         // H1 Heading (# Heading)
         if (line.startsWith('# ')) {
@@ -36,6 +57,41 @@ export const FormattedText = ({ text = '', className = '' }) => {
             </h2>
           );
         }
+        // Unchecked Checkbox (- [ ] Task)
+        if (line.startsWith('- [ ] ')) {
+          return (
+            <div
+              key={lineIdx}
+              onClick={(e) => handleCheckboxClick(e, lineIdx, line)}
+              className="flex items-start gap-1.5 text-xs text-slate-200 cursor-pointer hover:text-white group/check"
+            >
+              <Square className="w-3.5 h-3.5 text-slate-400 group-hover/check:text-cyan-400 mt-0.5 flex-shrink-0 transition-colors" />
+              <span>{parseInlineStyles(line.substring(6))}</span>
+            </div>
+          );
+        }
+        // Checked Checkbox (- [x] Task)
+        if (line.startsWith('- [x] ') || line.startsWith('- [X] ')) {
+          return (
+            <div
+              key={lineIdx}
+              onClick={(e) => handleCheckboxClick(e, lineIdx, line)}
+              className="flex items-start gap-1.5 text-xs text-slate-400 line-through cursor-pointer hover:text-slate-200 group/check"
+            >
+              <CheckSquare className="w-3.5 h-3.5 text-emerald-400 mt-0.5 flex-shrink-0 transition-colors" />
+              <span>{parseInlineStyles(line.substring(6))}</span>
+            </div>
+          );
+        }
+        // Bullet List (- Item or * Item)
+        if (line.startsWith('- ') || line.startsWith('* ')) {
+          return (
+            <div key={lineIdx} className="flex items-start gap-1.5 text-xs text-slate-200 pl-1">
+              <Circle className="w-2 h-2 text-cyan-400 fill-cyan-400 mt-1.5 flex-shrink-0" />
+              <span>{parseInlineStyles(line.substring(2))}</span>
+            </div>
+          );
+        }
 
         return (
           <p key={lineIdx} className="text-xs text-slate-300 leading-relaxed font-normal">
@@ -51,7 +107,6 @@ export const FormattedText = ({ text = '', className = '' }) => {
 function parseInlineStyles(str = '') {
   if (!str) return null;
 
-  // Regex tokenizer matching hyperlinks, bold, italic, strikethrough, underline, highlights, and hashtags
   const regex = /(\[.*?\]\(https?:\/\/[^\s\)]+\)|==.*?==|<mark>.*?<\/mark>|\*\*.*?\*\*|\*.*?\*|~~.*?~~|<u>.*?<\/u>|#[a-zA-Z0-9_\-]+)/g;
 
   const parts = [];
