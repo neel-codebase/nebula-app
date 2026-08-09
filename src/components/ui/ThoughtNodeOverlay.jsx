@@ -88,7 +88,6 @@ export const ThoughtNodeOverlay = () => {
     }
   };
 
-  // Robust Pointer Capture Card Resizing
   const startResize = (e, node) => {
     e.stopPropagation();
     e.preventDefault();
@@ -96,9 +95,7 @@ export const ThoughtNodeOverlay = () => {
     const targetElem = e.currentTarget;
     try {
       targetElem.setPointerCapture(e.pointerId);
-    } catch (err) {
-      // Fallback if setPointerCapture is unsupported
-    }
+    } catch (err) {}
 
     const startWidth = node.width || 300;
     const startHeight = node.height || 200;
@@ -127,7 +124,6 @@ export const ThoughtNodeOverlay = () => {
     window.addEventListener('pointerup', handleResizePointerUp);
   };
 
-  // Multi-Anchor Tether Handle Drag
   const startTetherDraft = (e, sourceNodeId) => {
     e.stopPropagation();
     e.preventDefault();
@@ -161,7 +157,7 @@ export const ThoughtNodeOverlay = () => {
       const dropWorldX = (upEvt.clientX - camera.x) / camera.zoom;
       const dropWorldY = (upEvt.clientY - camera.y) / camera.zoom;
 
-      const targetNode = Object.values(nodes).find((n) => {
+      const targetNode = Object.values(nodes || {}).find((n) => {
         return (
           n.id !== sourceNodeId &&
           dropWorldX >= n.x - 35 &&
@@ -182,21 +178,29 @@ export const ThoughtNodeOverlay = () => {
     window.addEventListener('pointerup', handleWindowPointerUp);
   };
 
+  const safeNodes = nodes && typeof nodes === 'object' ? nodes : {};
+
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      {Object.values(nodes).map((node) => {
+      {Object.values(safeNodes).map((node) => {
+        if (!node || !node.id) return null;
+
         const screenX = node.x * camera.zoom + camera.x;
         const screenY = node.y * camera.zoom + camera.y;
-        const screenWidth = node.width * camera.zoom;
-        const screenHeight = node.height * camera.zoom;
-        const isSelected = selection.nodeIds.includes(node.id);
+        const screenWidth = (node.width || 300) * camera.zoom;
+        const screenHeight = (node.height || 200) * camera.zoom;
+        const isSelected = (selection?.nodeIds || []).includes(node.id);
         const colorStyle = COLOR_ACCENTS[node.color || 'cyan'] || COLOR_ACCENTS.cyan;
 
+        // Ultra-lenient frustum bounds check ensuring cards are NEVER mistakenly culled
+        const viewportW = window.innerWidth || 1920;
+        const viewportH = window.innerHeight || 1080;
+
         if (
-          screenX + screenWidth < -200 ||
-          screenX > window.innerWidth + 200 ||
-          screenY + screenHeight < -200 ||
-          screenY > window.innerHeight + 200
+          screenX + screenWidth < -1500 ||
+          screenX > viewportW + 1500 ||
+          screenY + screenHeight < -1500 ||
+          screenY > viewportH + 1500
         ) {
           return null;
         }
@@ -222,7 +226,7 @@ export const ThoughtNodeOverlay = () => {
               <div className="flex items-center gap-2 truncate">
                 <div className={`w-2.5 h-2.5 rounded-full ${colorStyle.split(' ')[2]}`} />
                 <span className="font-bold text-xs text-white truncate">
-                  {node.title.replace(/^#+\s*/, '')}
+                  {(node.title || 'Untitled').replace(/^#+\s*/, '')}
                 </span>
               </div>
 
