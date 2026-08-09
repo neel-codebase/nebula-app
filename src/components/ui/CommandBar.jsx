@@ -2,17 +2,16 @@ import React, { useState } from 'react';
 import { useSpace } from '../../context/SpaceContext';
 import { 
   MousePointer, 
-  Plus, 
   Hand, 
   LayoutGrid, 
   Maximize2, 
   RotateCcw, 
   Search,
   Download,
-  Upload,
   Volume2,
   VolumeX,
-  Send
+  Send,
+  Sparkles
 } from 'lucide-react';
 
 export const CommandBar = () => {
@@ -50,8 +49,20 @@ export const CommandBar = () => {
     downloadAnchor.remove();
   };
 
+  const nodeCount = Object.keys(nodes || {}).length;
+
   return (
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none flex flex-col items-center gap-2">
+      {/* Onboarding Quick Guidance Banner */}
+      {nodeCount <= 3 && (
+        <div className="pointer-events-auto animate-fadeIn">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-950/90 border border-cyan-500/40 text-cyan-200 text-[11px] font-semibold shadow-glow-cyan backdrop-blur-xl">
+            <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+            <span>Double-click canvas to add a thought • Drag (+) to tether • Type #tags to link</span>
+          </div>
+        </div>
+      )}
+
       <div className="pointer-events-auto flex items-center gap-2 glass-panel p-2 rounded-2xl shadow-2xl border border-white/10">
         {/* Tool Selectors */}
         <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/5">

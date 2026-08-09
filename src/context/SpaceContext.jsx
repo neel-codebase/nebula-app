@@ -13,54 +13,23 @@ import { ambientAudio } from '../utils/ambientAudio';
 const SpaceContext = createContext(null);
 
 const INITIAL_NODES = {
-  'node-1': {
-    id: 'node-1',
-    title: '🌌 Welcome to Nebula v4.0',
-    content: 'Cloud-synced infinite spatial workspace with multi-galaxy maps & star gravity.\n\n- [x] Drag cards around the spatial nexus\n- [ ] Add #tags like #spatial to auto-tether notes\n- [ ] Switch or create blank Galaxy Maps in left rail',
-    x: -240,
-    y: -20,
-    width: 330,
-    height: 220,
+  'starter-node': {
+    id: 'starter-node',
+    title: '✨ Welcome to Nebula',
+    content: 'Double-click anywhere to capture a thought.\nDrag (+) handles or type #tags to tether cards.',
+    x: -160,
+    y: -80,
+    width: 320,
+    height: 160,
     color: 'cyan',
-    tags: ['welcome', 'spatial'],
-    pinned: true,
-    createdAt: Date.now(),
-    updatedAt: Date.now()
-  },
-  'node-2': {
-    id: 'node-2',
-    title: '🔗 Tag & Tether System',
-    content: 'Drag from any **(+) anchor handle** to draw connection tethers.\n\n- Double-click tethers to rename\n- Click tethers to choose accent colors',
-    x: 220,
-    y: -130,
-    width: 310,
-    height: 210,
-    color: 'purple',
-    tags: ['tether', 'spatial'],
-    pinned: false,
-    createdAt: Date.now(),
-    updatedAt: Date.now()
-  },
-  'node-3': {
-    id: 'node-3',
-    title: '🏷️ Organic #Tags',
-    content: 'Add matching hashtags like #spatial to automatically generate glowing dotted tethers across space.',
-    x: 220,
-    y: 130,
-    width: 310,
-    height: 180,
-    color: 'emerald',
-    tags: ['tags', 'spatial'],
+    tags: ['welcome'],
     pinned: false,
     createdAt: Date.now(),
     updatedAt: Date.now()
   }
 };
 
-const INITIAL_LINKS = [
-  { id: 'link-1', sourceId: 'node-1', targetId: 'node-2', label: 'connects to', color: 'purple' },
-  { id: 'link-2', sourceId: 'node-1', targetId: 'node-3', label: 'shares #spatial', color: 'emerald' }
-];
+const INITIAL_LINKS = [];
 
 const DEFAULT_GALAXY_ID = 'galaxy-main';
 

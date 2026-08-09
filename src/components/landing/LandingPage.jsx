@@ -1,40 +1,20 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useSpace } from '../../context/SpaceContext';
 import { 
-  Sparkles, 
   ArrowRight, 
   Layers, 
   Network, 
-  Zap, 
   ShieldCheck, 
   Compass,
   Cpu,
-  Workflow,
   Chrome,
   Globe2,
-  Atom
+  Atom,
+  Sparkles
 } from 'lucide-react';
 
 export const LandingPage = ({ onClose }) => {
-  const { createNode, createLink, setIsChromeModalOpen } = useSpace();
-  const [activeTab, setActiveTab] = useState('overview');
-
-  const handleLaunchTemplate = (templateType) => {
-    if (templateType === 'roadmap') {
-      const n1 = createNode(-300, -50, '🎯 Q4 Nebula Objectives', 'cyan', '## Strategic Goals\n- [x] Consolidate Nebula v4.0 Spatial Core\n- [ ] Deploy #nebula tag tethers\n- [ ] Scale multi-galaxy spatial maps');
-      const n2 = createNode(180, -140, '⚡ Gravity Particle Nexus', 'purple', '60FPS HTML5 Canvas Engine with 1,000-particle Pythagorean Gravity Nexus.\n\nOptimized for #nebula physics.');
-      const n3 = createNode(180, 100, '🚀 Multi-Galaxy Workspaces', 'emerald', 'Isolate project nodes into distinct galaxy maps stored in left rail.\n\nShares #nebula focus.');
-      createLink(n1, n2, 'powers', 'purple');
-      createLink(n1, n3, 'drives', 'emerald');
-    } else if (templateType === 'architecture') {
-      const n1 = createNode(-250, 0, '🌌 Retina Canvas & Spatial React', 'cyan', 'High-DPI Retina canvas engine paired with React 18 spatial state engine.\n\nIntegrated with #tech.');
-      const n2 = createNode(200, -100, '🔥 Local-First Cloud Sync', 'emerald', 'Firestore snapshot sync (`onSnapshot`) with indexedDB offline persistence for #tech.');
-      const n3 = createNode(200, 120, '🎧 432Hz Harmonic Synthesizer', 'amber', 'Procedural Web Audio API cosmic drone synthesizer for deep focus environment.');
-      createLink(n1, n2, 'syncs with', 'emerald');
-      createLink(n1, n3, 'synthesizes', 'amber');
-    }
-    onClose();
-  };
+  const { setIsChromeModalOpen } = useSpace();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-2xl animate-fadeIn overflow-y-auto">
@@ -42,7 +22,7 @@ export const LandingPage = ({ onClose }) => {
         {/* Top Glow Accent Bar */}
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-cyan-500 via-purple-500 to-emerald-500" />
 
-        {/* Header Section */}
+        {/* Header Section with SINGLE Primary CTA */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-white/10 pb-6">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-purple-600 flex items-center justify-center shadow-glow-cyan">
@@ -59,24 +39,20 @@ export const LandingPage = ({ onClose }) => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => setIsChromeModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-semibold border border-white/10 transition-all flex items-center gap-1.5"
+              className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-semibold border border-white/10 transition-all flex items-center gap-1.5"
+              title="Download Chrome App Package"
             >
-              <Chrome className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Chrome App</span>
+              <Chrome className="w-4 h-4 text-cyan-400" />
+              <span className="hidden sm:inline">Chrome App</span>
             </button>
-            <button
-              onClick={() => handleLaunchTemplate('roadmap')}
-              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-semibold border border-white/10 transition-all flex items-center gap-1.5"
-            >
-              <Workflow className="w-3.5 h-3.5 text-purple-400" />
-              <span>Load Template</span>
-            </button>
+
+            {/* SINGLE Primary Entry CTA */}
             <button
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-bold shadow-glow-cyan transition-all flex items-center gap-2"
+              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white text-xs font-bold shadow-glow-cyan transition-all flex items-center gap-2 transform hover:scale-105"
             >
               <span>Enter Workspace</span>
               <ArrowRight className="w-4 h-4" />
@@ -168,7 +144,7 @@ export const LandingPage = ({ onClose }) => {
           </div>
         </div>
 
-        {/* Footer Navigation */}
+        {/* Streamlined Footer Metadata */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/10 text-xs text-slate-400">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-400" /> Cloud Synced</span>
@@ -176,13 +152,9 @@ export const LandingPage = ({ onClose }) => {
             <span className="flex items-center gap-1.5"><Compass className="w-4 h-4 text-purple-400" /> V4.0 Engine</span>
           </div>
 
-          <button
-            onClick={onClose}
-            className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors flex items-center gap-1"
-          >
-            <span>Enter Nebula Workspace</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <span className="text-[11px] text-slate-500 font-mono">
+            Nebula V4.0 Consolidated • Instant Spatial Workspace
+          </span>
         </div>
       </div>
     </div>
